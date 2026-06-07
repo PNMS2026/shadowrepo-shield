@@ -202,7 +202,7 @@ export default function ScanResultPage() {
       >
         {/* Risk Gauge */}
         <div className="card flex-center" style={{ flexDirection: "column" }}>
-          <RiskGauge score={result.risk_score} size={160} />
+          <RiskGauge score={result.risk_score} size={160} level={result.risk_level} />
           <div
             style={{
               marginTop: "16px",

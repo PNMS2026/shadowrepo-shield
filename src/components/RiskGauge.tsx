@@ -1,18 +1,21 @@
-import { RISK_LEVEL_CONFIG, getRiskLevel } from "../types";
+import { RISK_LEVEL_CONFIG, getRiskLevel, RiskLevel } from "../types";
 
 interface RiskGaugeProps {
   score: number;
   size?: number;
+  level?: RiskLevel;
 }
 
-export default function RiskGauge({ score, size = 180 }: RiskGaugeProps) {
-  const level = getRiskLevel(score);
-  const config = RISK_LEVEL_CONFIG[level];
+export default function RiskGauge({ score, size = 180, level }: RiskGaugeProps) {
+  const finalLevel = level || getRiskLevel(score);
+  const config = RISK_LEVEL_CONFIG[finalLevel];
 
   const radius = (size - 20) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (score / 100) * circumference;
   const center = size / 2;
+
+  const label = finalLevel === "high" && score >= 80 ? "High Risk — Manual Review Recommended" : config.label;
 
   return (
     <div className="risk-gauge" style={{ width: size, height: size }}>
@@ -46,7 +49,7 @@ export default function RiskGauge({ score, size = 180 }: RiskGaugeProps) {
           {score}
         </div>
         <div className="risk-gauge-label" style={{ color: config.color }}>
-          {config.label}
+          {label}
         </div>
       </div>
     </div>

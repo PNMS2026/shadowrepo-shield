@@ -2,7 +2,7 @@
 // ShadowRepo Shield — Core TypeScript Type Definitions
 // ============================================================
 
-export type Severity = "critical" | "high" | "medium" | "low";
+export type Severity = "critical" | "high" | "medium" | "low" | "informational";
 
 export type RiskLevel = "low" | "review_recommended" | "high" | "critical";
 
@@ -92,6 +92,7 @@ export const SEVERITY_ORDER: Record<Severity, number> = {
   high: 1,
   medium: 2,
   low: 3,
+  informational: 4,
 };
 
 export const CATEGORY_LABELS: Record<Category, string> = {
@@ -127,9 +128,9 @@ export const RISK_LEVEL_CONFIG: Record<
 };
 
 export function getRiskLevel(score: number): RiskLevel {
-  if (score <= 14) return "low";
-  if (score <= 39) return "review_recommended";
-  if (score <= 74) return "high";
+  if (score <= 20) return "low";
+  if (score <= 49) return "review_recommended";
+  if (score <= 79) return "high";
   return "critical";
 }
 

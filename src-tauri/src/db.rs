@@ -201,6 +201,7 @@ pub fn get_scan(db_path: &Path, scan_id: &str) -> Result<Option<ScanResult>> {
             "critical" => Severity::Critical,
             "high" => Severity::High,
             "medium" => Severity::Medium,
+            "informational" => Severity::Informational,
             _ => Severity::Low,
         };
 

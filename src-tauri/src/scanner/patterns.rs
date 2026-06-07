@@ -280,7 +280,7 @@ pub fn build_pattern_rules() -> Vec<PatternRule> {
 
     rules.push(PatternRule {
         id: "sol-mint-internal".into(),
-        severity: Severity::Low,
+        severity: Severity::Informational,
         category: Category::Informational,
         description: "Internal mint function detected — standard utility".into(),
         recommendation: "Ensure internal mint functions can only be called by trusted external interfaces.".into(),
@@ -427,7 +427,7 @@ pub fn build_pattern_rules() -> Vec<PatternRule> {
     // =============================================
     rules.push(PatternRule {
         id: "js-network-request".into(),
-        severity: Severity::Low,
+        severity: Severity::Informational,
         category: Category::Informational,
         description: "Outbound network request capability detected".into(),
         recommendation: "Review network communications. Legitimate applications connect to external APIs, but this can also exfiltrate keys.".into(),

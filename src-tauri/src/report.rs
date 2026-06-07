@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use super::scanner::types::{ScanResult, Severity};
+use super::scanner::types::{ScanResult, Severity, RiskLevel};
 
 /// Export scan result to JSON format with enhanced metadata
 pub fn export_to_json(result: &ScanResult, output_path: &Path) -> Result<(), String> {
@@ -21,11 +21,18 @@ pub fn export_to_json(result: &ScanResult, output_path: &Path) -> Result<(), Str
 pub fn export_to_html(result: &ScanResult, output_path: &Path) -> Result<(), String> {
     let mut html = String::new();
 
-    let (risk_color, risk_bg, risk_label) = match result.risk_score {
-        0..=14 => ("#10b981", "rgba(16, 185, 129, 0.08)", "Low Risk"),
-        15..=39 => ("#f59e0b", "rgba(245, 158, 11, 0.08)", "Review Recommended"),
-        40..=74 => ("#f97316", "rgba(249, 115, 22, 0.08)", "High Risk"),
-        _ => ("#ef4444", "rgba(239, 68, 68, 0.08)", "Critical Threat Indicators Found"),
+    use super::scanner::types::RiskLevel;
+    let (risk_color, risk_bg, risk_label) = match result.risk_level {
+        RiskLevel::Low => ("#10b981", "rgba(16, 185, 129, 0.08)", "Low Risk"),
+        RiskLevel::ReviewRecommended => ("#f59e0b", "rgba(245, 158, 11, 0.08)", "Review Recommended"),
+        RiskLevel::High => {
+            if result.risk_score >= 80 {
+                ("#f97316", "rgba(249, 115, 22, 0.08)", "High Risk — Manual Review Recommended")
+            } else {
+                ("#f97316", "rgba(249, 115, 22, 0.08)", "High Risk")
+            }
+        }
+        RiskLevel::Critical => ("#ef4444", "rgba(239, 68, 68, 0.08)", "Critical Threat Indicators Found"),
     };
 
     // Count by severity
@@ -208,8 +215,7 @@ pub fn export_to_html(result: &ScanResult, output_path: &Path) -> Result<(), Str
         low = low_count,
     ));
 
-    // Findings grouped by severity
-    let severity_order = [Severity::Critical, Severity::High, Severity::Medium, Severity::Low];
+    let severity_order = [Severity::Critical, Severity::High, Severity::Medium, Severity::Low, Severity::Informational];
     for sev in &severity_order {
         let sev_findings: Vec<_> = result.findings.iter().filter(|f| &f.severity == sev).collect();
         if sev_findings.is_empty() {
@@ -222,6 +228,7 @@ pub fn export_to_html(result: &ScanResult, output_path: &Path) -> Result<(), Str
                 Severity::High => ("#f97316", "rgba(249, 115, 22, 0.08)"),
                 Severity::Medium => ("#f59e0b", "rgba(245, 158, 11, 0.08)"),
                 Severity::Low => ("#10b981", "rgba(16, 185, 129, 0.08)"),
+                Severity::Informational => ("#6b7280", "rgba(107, 114, 128, 0.08)"),
             };
 
             let line_info = finding
@@ -354,12 +361,25 @@ pub fn export_to_pdf(result: &ScanResult, output_path: &Path) -> Result<(), Stri
     current_layer.add_line(line);
     writer.y -= 8.0;
 
+    let risk_lvl_label = match result.risk_level {
+        RiskLevel::Low => "Low Risk",
+        RiskLevel::ReviewRecommended => "Review Recommended",
+        RiskLevel::High => {
+            if result.risk_score >= 80 {
+                "High Risk — Manual Review Recommended"
+            } else {
+                "High Risk"
+            }
+        }
+        RiskLevel::Critical => "Critical Threat Indicators Found",
+    };
+
     // Scan metadata
     let meta_lines = vec![
         format!("Scan Name:     {}", result.name),
         format!("Scan ID:       {}", result.id),
         format!("Scan Date:     {}", result.scan_date),
-        format!("Risk Score:    {}/100 ({:?})", result.risk_score, result.risk_level),
+        format!("Risk Score:    {}/100 ({})", result.risk_score, risk_lvl_label),
         format!("Files Scanned: {}", result.total_files),
         format!("Total Findings: {}", result.total_findings),
     ];
@@ -407,7 +427,7 @@ pub fn export_to_pdf(result: &ScanResult, output_path: &Path) -> Result<(), Stri
 
     // We'll add findings on subsequent pages as needed
     let mut current_page_layer = current_layer;
-    let severity_order = [Severity::Critical, Severity::High, Severity::Medium, Severity::Low];
+    let severity_order = [Severity::Critical, Severity::High, Severity::Medium, Severity::Low, Severity::Informational];
 
     for sev in &severity_order {
         let sev_findings: Vec<_> = result.findings.iter().filter(|f| &f.severity == sev).collect();
@@ -506,17 +526,31 @@ pub fn export_to_pdf(result: &ScanResult, output_path: &Path) -> Result<(), Stri
 
 /// Generate executive summary text
 fn generate_executive_summary(result: &ScanResult, critical: usize, high: usize, medium: usize, low: usize) -> String {
-    let risk_desc = match result.risk_score {
-        0..=14 => "The repository appears to have a low risk profile with minimal security concerns.",
-        15..=39 => "The repository has a low-to-moderate risk profile. Security patterns indicate review is recommended.",
-        40..=74 => "The repository has a high risk profile. A security review is recommended to evaluate detected patterns.",
-        _ => "The repository has critical threat indicators. Immediate review is strongly recommended before proceeding.",
+    use super::scanner::types::RiskLevel;
+    let risk_desc = match result.risk_level {
+        RiskLevel::Low => "The repository appears to have a low risk profile with minimal security concerns.",
+        RiskLevel::ReviewRecommended => "The repository has a low-to-moderate risk profile. Security patterns indicate review is recommended.",
+        RiskLevel::High => "The repository has a high risk profile. A security review is recommended to evaluate detected patterns.",
+        RiskLevel::Critical => "The repository has critical threat indicators. Immediate review is strongly recommended before proceeding.",
+    };
+
+    let risk_lvl_label = match result.risk_level {
+        RiskLevel::Low => "Low Risk",
+        RiskLevel::ReviewRecommended => "Review Recommended",
+        RiskLevel::High => {
+            if result.risk_score >= 80 {
+                "High Risk — Manual Review Recommended"
+            } else {
+                "High Risk"
+            }
+        }
+        RiskLevel::Critical => "Critical Threat Indicators Found",
     };
 
     format!(
         "{} ShadowRepo Shield scanned {} files and identified {} security findings across the repository \"{}\". \
         Breakdown: {} Critical, {} High, {} Medium, {} Low severity issues. \
-        The overall security risk score is {}/100 ({:?}). \
+        The overall security risk score is {}/100 ({}). \
         All scanning was performed locally — no source code was uploaded to any server.",
         risk_desc,
         result.total_files,
@@ -524,7 +558,7 @@ fn generate_executive_summary(result: &ScanResult, critical: usize, high: usize,
         result.name,
         critical, high, medium, low,
         result.risk_score,
-        result.risk_level
+        risk_lvl_label
     )
 }
 

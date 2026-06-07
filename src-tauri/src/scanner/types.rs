@@ -8,6 +8,7 @@ pub enum Severity {
     High,
     Medium,
     Low,
+    Informational,
 }
 
 /// Categories of security findings
