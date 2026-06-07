@@ -1,6 +1,6 @@
 [package]
 name = "shadowrepo-shield"
-version = "1.0.0"
+version = "1.0.1"
 description = "Local-first blockchain security scanner for Web3 developers"
 authors = ["ShadowRepo Shield"]
 edition = "2021"
