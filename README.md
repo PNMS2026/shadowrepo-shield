@@ -12,24 +12,38 @@
 
 ---
 
+## Download ShadowRepo Shield
+
+The latest Windows release is available from the **GitHub Releases** page.
+
+**Latest version:** ShadowRepo Shield **v1.0.1**
+
+**Recommended installer:**
+`ShadowRepo-Shield-v1.0.1-Setup.exe`
+
+**Alternative installer:**
+`ShadowRepo-Shield-v1.0.1.msi`
+
+**Download from:**
+[https://github.com/PNMS2026/shadowrepo-shield/releases/latest](https://github.com/PNMS2026/shadowrepo-shield/releases/latest)
+
+---
+
 ## Key Features
 
 - **Static Security Walker:** Recursively traverses directories, skipping binary structures and standard dependency folders (e.g., `node_modules`, `.git`, `dist`, `build`).
 - **Web3 Threat Engine:** Detects dangerous lifecycle scripts (e.g., preinstall hooks), shell execution imports (`child_process`), wallet drainer APIs (`setApprovalForAll`, `MaxUint256`), permit abuses, and Solidity security risks (`delegatecall`, `tx.origin`, `selfdestruct`).
+- **Git Hook Malware Detection (v1.0.1):**
+  - Active `.git/hooks` detection (commit-msg, pre-push, post-checkout, post-merge, pre-commit, pre-rebase, post-rewrite)
+  - Hook chaining detection
+  - Remote `curl`/`wget` pipe-to-shell execution detection
+  - Hidden PowerShell execution detection
+  - Self-deleting hook behavior detection
+  - Suspicious remote domain reference detection
+  - Combined heuristic escalation to Critical when multiple indicators co-occur
 - **Interactive Risk Dashboard:** Visualization of threats with high-impact category gauges, severity filters, and recommended remediations.
 - **Blockchain Proof Anchoring:** Generates deterministic repository and report hashes using SHA-256 and registers them to a Solidity smart contract for trustless third-party verification.
-- **Exporting Capabilities:** Generates premium print-friendly HTML and JSON reports to be shared securely.
-
----
-
-## Download Windows MVP:
-Go to [release/v1.0.0/windows/](release/v1.0.0/windows/)
-
-Recommended installer:
-[ShadowRepo-Shield-v1.0.0-Setup.exe](release/v1.0.0/windows/ShadowRepo-Shield-v1.0.0-Setup.exe)
-
-Alternative MSI:
-[ShadowRepo-Shield-v1.0.0.msi](release/v1.0.0/windows/ShadowRepo-Shield-v1.0.0.msi)
+- **Report Export:** Generates JSON, HTML, and real PDF security reports for local review and sharing.
 
 ---
 
