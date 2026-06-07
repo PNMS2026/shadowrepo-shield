@@ -1,4 +1,4 @@
-# MIT License
+# ShadowRepo Shield License & Terms of Service
 
 **Copyright (c) 2026 ShadowRepo Shield**
 
@@ -6,14 +6,22 @@
 
 ### 📜 Terms of Use & Permissions
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software under the following conditions:
 
-- **Usage:** You are free to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software.
 - **Attribution:** The above copyright notice and this permission notice must be included in all copies or substantial portions of the Software.
+- **🚫 Non-Commercial restriction:**
+  - **No Resale:** No one is permitted to sell, license, or commercialize this free version of the Software. It must remain free and open to the community.
+- **⚖️ Permitted Use Cases:**
+  - **Legal Work Only:** The Software must only be used for legal work, security auditing, and legitimate research. 
+  - **Good & Legitimate Uses:** Users must only use this tool for constructive security improvements. Any use of this Software to facilitate, execute, or aid in cybercrimes, scams, or malicious operations is strictly prohibited.
 
 ---
 
-### ⚠️ Disclaimer of Warranty
+### ⚠️ Liability & Disclaimer of Responsibility
+
+> [!CAUTION]
+> **Zero Responsibility for Misuse:**
+> If anyone uses this Software to execute a scam, commit a crime, or perform any illegal activities, the authors, developers, and copyright holders of this Software shall not be held responsible or liable for any damages, legal actions, or losses arising from such misuse.
 
 > [!WARNING]
 > THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
