@@ -1,0 +1,19 @@
+[[permission]]
+identifier = "allow-all-commands"
+description = "Enables all custom commands of the application"
+commands.allow = [
+  "start_scan",
+  "upload_and_scan",
+  "get_scan_history",
+  "get_scan_result",
+  "delete_scan",
+  "export_report",
+  "get_settings",
+  "update_settings",
+  "update_blockchain_tx",
+  "get_dashboard_stats",
+  "select_folder",
+  "select_zip_file",
+  "reveal_in_explorer",
+  "scan_git_url"
+]

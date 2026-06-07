@@ -1,0 +1,2 @@
+befc12d948085594466e6b07feec8b1cfd8ab47d8845ccde7ab5139c98655c4f *ShadowRepo-Shield-v0.1.0-Setup.exe
+65d6f582701e972de0844c17866984786f2426a78a0752b8fc77980ff11d7f11 *ShadowRepo-Shield-v0.1.0.msi
