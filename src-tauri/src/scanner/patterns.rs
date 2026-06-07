@@ -434,6 +434,81 @@ pub fn build_pattern_rules() -> Vec<PatternRule> {
         pattern: Regex::new(r"\b(?:fetch|axios|http\.request|https\.request|websocket|socket\.io)\b").unwrap(),
     });
 
+    // =============================================
+    // Git hook malware rules
+    // =============================================
+    rules.push(PatternRule {
+        id: "hook-chaining".into(),
+        severity: Severity::High,
+        category: Category::HookExecutionRisk,
+        description: "Hook chaining execution detected".into(),
+        recommendation: "Review the hook content to ensure it does not chain executions of sample or hidden hook scripts.".into(),
+        pattern: Regex::new(r#"\b[\w-]+\.sample\b"#).unwrap(),
+    });
+
+    rules.push(PatternRule {
+        id: "remote-download-execute".into(),
+        severity: Severity::Critical,
+        category: Category::MaliciousIndicator,
+        description: "Remote payload download and execution detected".into(),
+        recommendation: "Never pipe curl/wget/Invoke-WebRequest output directly to sh/bash/zsh/cmd/powershell execution. Download and audit scripts first.".into(),
+        pattern: Regex::new(r"(?i)(?:curl\s+.*\|\s*(?:sh|bash|zsh|cmd|powershell)|wget\s+.*\|\s*(?:sh|bash|zsh|cmd)|Invoke-WebRequest\s+.*\|\s*(?:iex|Invoke-Expression|cmd|powershell))").unwrap(),
+    });
+
+    rules.push(PatternRule {
+        id: "hidden-windows-exec".into(),
+        severity: Severity::Critical,
+        category: Category::MaliciousIndicator,
+        description: "Hidden PowerShell execution detected".into(),
+        recommendation: "Avoid hidden processes, cmd execution switches (/c), or piping curl/wget directly into cmd/powershell.".into(),
+        pattern: Regex::new(r"(?i)(?:powershell(?:\.exe)?\s+.*-WindowStyle\s+Hidden|Start-Process\s+cmd|cmd(?:\.exe)?\s+/c|curl(?:\.exe)?\s+.*\|\s*cmd)").unwrap(),
+    });
+
+    rules.push(PatternRule {
+        id: "bg-silent-exec".into(),
+        severity: Severity::High,
+        category: Category::HookExecutionRisk,
+        description: "Background silent execution detected".into(),
+        recommendation: "Avoid silent background tasks in script executions as they hide activity from the user.".into(),
+        pattern: Regex::new(r#">/dev/null\s+2>&1\s+&"#).unwrap(),
+    });
+
+    rules.push(PatternRule {
+        id: "os-payload-loader".into(),
+        severity: Severity::High,
+        category: Category::HookExecutionRisk,
+        description: "OS-targeted payload loader detected".into(),
+        recommendation: "Review conditional shell logic targeted at specific operating systems (Linux, Darwin, MINGW, CYGWIN).".into(),
+        pattern: Regex::new(r"(?i)(?:uname\s+-s|case\s+.*in.*(?:Linux|Darwin|MINGW|MSYS|CYGWIN))").unwrap(),
+    });
+
+    rules.push(PatternRule {
+        id: "self-delete-hook".into(),
+        severity: Severity::Critical,
+        category: Category::MaliciousIndicator,
+        description: "Self-deleting hook behavior detected".into(),
+        recommendation: "Ensure script does not attempt to self-delete or clean up specific hook indicators, which is common in malware.".into(),
+        pattern: Regex::new(r#"(?i)rm\s+-f\s+.*(?:commit-msg|post-checkout|pre-push|"\$0"|'\$0'|\$0)"#).unwrap(),
+    });
+
+    rules.push(PatternRule {
+        id: "marker-file-behavior".into(),
+        severity: Severity::High,
+        category: Category::HookExecutionRisk,
+        description: "Marker file behavior detected".into(),
+        recommendation: "Review script logic writing status/marker files to temporary directories or .git-checker.".into(),
+        pattern: Regex::new(r"(?i)(?:\.git-checker|echo\s+.*>\s*(?:\$TMPDIR|\$TEMP|/tmp)/)").unwrap(),
+    });
+
+    rules.push(PatternRule {
+        id: "suspicious-remote-domain".into(),
+        severity: Severity::Medium,
+        category: Category::HookExecutionRisk,
+        description: "Suspicious remote domain reference detected".into(),
+        recommendation: "Verify any hardcoded URLs or domains inside script files before execution.".into(),
+        pattern: Regex::new(r"(?i)https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:/[^\s]*)?").unwrap(),
+    });
+
     rules
 }
 
