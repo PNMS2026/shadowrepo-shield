@@ -1,0 +1,64 @@
+name: Build Linux CLI Release Asset
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to upload assets to (must already exist on GitHub)'
+        required: true
+        default: 'v1.4.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux-cli:
+    name: Build and Upload Linux CLI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout selected tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Build release CLI binary
+        run: |
+          cd src-tauri
+          cargo build --bin shadowrepo-cli --release
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          cp src-tauri/target/release/shadowrepo-cli release-assets/shadowrepo-cli-linux-x86_64
+          cd release-assets
+          sha256sum shadowrepo-cli-linux-x86_64 > shadowrepo-cli-linux-x86_64.sha256
+          echo "SHA256 Checksum computed:"
+          cat shadowrepo-cli-linux-x86_64.sha256
+
+      - name: Verify release exists and upload assets
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          
+          # Check if the release already exists
+          echo "Verifying if release for tag $TAG exists on GitHub..."
+          gh release view "$TAG" > /dev/null || {
+            echo "::error::Release for tag $TAG does not exist. Please create the release draft on GitHub first."
+            exit 1
+          }
+          
+          # Upload the Linux binary and its checksum
+          echo "Uploading Linux CLI assets to release $TAG..."
+          gh release upload "$TAG" \
+            release-assets/shadowrepo-cli-linux-x86_64 \
+            release-assets/shadowrepo-cli-linux-x86_64.sha256 \
+            --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
