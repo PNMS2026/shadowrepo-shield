@@ -16,10 +16,16 @@ jobs:
     name: Build and Upload Linux CLI
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout selected tag
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag }}
+          fetch-depth: 0
+
+      - name: Fetch tags and checkout tag
+        run: |
+          git fetch --tags --force
+          git rev-parse "${{ github.event.inputs.tag }}^{commit}"
+          git checkout --detach "${{ github.event.inputs.tag }}"
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -62,3 +68,12 @@ jobs:
             --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: shadowrepo-cli-linux
+          path: |
+            release-assets/shadowrepo-cli-linux-x86_64
+            release-assets/shadowrepo-cli-linux-x86_64.sha256
+          retention-days: 5
