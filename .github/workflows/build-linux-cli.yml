@@ -2,54 +2,49 @@ name: Build Linux CLI Release Asset
 
 on:
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Release tag to build (must already be pushed to GitHub)'
-        required: true
-        default: 'v1.4.0'
+
+permissions:
+  contents: read
 
 jobs:
   build-linux-cli:
     name: Build Linux CLI
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout main
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Fetch tags and checkout tag
+      - name: Show build commit
         run: |
-          git fetch --tags --force
-          TAG="${{ github.event.inputs.tag }}"
-          git checkout --detach "${TAG}"
+          git rev-parse HEAD
+          git log --oneline -1
 
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustc --version
+          cargo --version
 
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
-      - name: Build release CLI binary
+      - name: Build Linux CLI
         run: |
           cargo build --manifest-path src-tauri/Cargo.toml --bin shadowrepo-cli --release
 
-      - name: Prepare release assets
+      - name: Prepare Linux release assets
         run: |
           mkdir -p release-assets
           cp src-tauri/target/release/shadowrepo-cli release-assets/shadowrepo-cli-linux-x86_64
+          chmod +x release-assets/shadowrepo-cli-linux-x86_64
           cd release-assets
           sha256sum shadowrepo-cli-linux-x86_64 > shadowrepo-cli-linux-x86_64.sha256
-          echo "SHA256 Checksum computed:"
+          ls -lh
           cat shadowrepo-cli-linux-x86_64.sha256
 
-      - name: Upload artifacts
+      - name: Upload Linux CLI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: shadowrepo-cli-linux-${{ github.event.inputs.tag }}
+          name: shadowrepo-cli-linux-v1.4.0
           path: |
             release-assets/shadowrepo-cli-linux-x86_64
             release-assets/shadowrepo-cli-linux-x86_64.sha256
-          retention-days: 5
+          if-no-files-found: error
