@@ -1,7 +1,6 @@
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use tauri::Manager;
 use tauri_plugin_dialog::DialogExt;
 use zip::ZipArchive;
 
@@ -9,6 +8,7 @@ use super::db;
 use super::report;
 use super::scanner;
 use super::scanner::types::{DashboardStats, ScanResult, ScanSummary, Settings};
+use super::scanner::types::ScanMode;
 
 /// Helper to get the database path
 fn get_db_path(app_handle: &tauri::AppHandle) -> PathBuf {
@@ -31,7 +31,7 @@ pub async fn start_scan(
     }
 
     let scan_id = uuid::Uuid::new_v4().to_string();
-    let result = scanner::run_scan(scan_path, &scan_id, &scan_name);
+    let result = scanner::run_scan(scan_path, &scan_id, &scan_name, ScanMode::Local, None);
 
     let result = match result {
         Ok(r) => r,
@@ -134,7 +134,7 @@ pub async fn upload_and_scan(
 
     // Run scanner on extracted directory
     let scan_id = uuid::Uuid::new_v4().to_string();
-    let scan_result = scanner::run_scan(&extract_to, &scan_id, &scan_name);
+    let scan_result = scanner::run_scan(&extract_to, &scan_id, &scan_name, ScanMode::Local, None);
 
     // Load settings to check auto-delete flag
     let db_path = get_db_path(&app_handle);
@@ -253,7 +253,7 @@ pub async fn scan_git_url(
 
     // Run scanner
     let scan_id = uuid::Uuid::new_v4().to_string();
-    let scan_result = scanner::run_scan(&extract_dir, &scan_id, &scan_name);
+    let scan_result = scanner::run_scan(&extract_dir, &scan_id, &scan_name, ScanMode::Local, None);
 
     // Clean up extracted files
     let db_path = get_db_path(&app_handle);
@@ -494,15 +494,100 @@ pub async fn reveal_in_explorer(path: String, app_handle: tauri::AppHandle) -> R
             })?;
         Ok(())
     }
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "linux")]
     {
-        let parent = Path::new(&path).parent().unwrap_or(Path::new(""));
-        opener::open(parent).map_err(|e| {
-            let err_msg = format!("Failed to open parent directory: {}", e);
-            super::log_message(&app_handle, "ERROR", &err_msg);
-            err_msg
-        })?;
+        use std::process::Command;
+        let parent = Path::new(&path).parent().unwrap_or(Path::new("/"));
+        Command::new("xdg-open")
+            .arg(parent)
+            .spawn()
+            .map_err(|e| {
+                let err_msg = format!("Failed to open directory with xdg-open: {}", e);
+                super::log_message(&app_handle, "ERROR", &err_msg);
+                err_msg
+            })?;
         Ok(())
     }
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        let parent = Path::new(&path).parent().unwrap_or(Path::new("/"));
+        Command::new("open")
+            .arg(parent)
+            .spawn()
+            .map_err(|e| {
+                let err_msg = format!("Failed to open directory: {}", e);
+                super::log_message(&app_handle, "ERROR", &err_msg);
+                err_msg
+            })?;
+        Ok(())
+    }
+}
+
+#[tauri::command]
+pub async fn explain_finding(
+    model: String,
+    finding: scanner::ai::FindingExplanationRequest,
+    app_handle: tauri::AppHandle,
+) -> Result<String, String> {
+    super::log_message(&app_handle, "INFO", &format!("AI Explanation requested using model: {}", model));
+    scanner::ai::explain_finding(&model, finding).await
+}
+
+#[tauri::command]
+pub async fn generate_executive_summary(
+    model: String,
+    req: scanner::ai::ExecutiveSummaryRequest,
+    app_handle: tauri::AppHandle,
+) -> Result<String, String> {
+    super::log_message(&app_handle, "INFO", &format!("AI Executive Summary requested using model: {}", model));
+    scanner::ai::generate_executive_summary_ai(&model, req).await
+}
+
+#[tauri::command]
+pub async fn verify_report_hash(
+    scan_id: String,
+    app_handle: tauri::AppHandle,
+) -> Result<String, String> {
+    super::log_message(&app_handle, "INFO", &format!("Report integrity check requested for scan: {}", scan_id));
+
+    let db_path = get_db_path(&app_handle);
+    let scan = db::get_scan(&db_path, &scan_id)
+        .map_err(|e| format!("Database error: {}", e))?
+        .ok_or_else(|| "Scan not found".to_string())?;
+
+    // Recompute report hash from the stored scan data
+    // We must temporarily clear report_hash to match original computation
+    let mut temp_result = scan.clone();
+    temp_result.report_hash = String::new();
+
+    let report_json = serde_json::to_string(&temp_result)
+        .map_err(|e| format!("Failed to serialize result: {}", e))?;
+    let recomputed_hash = scanner::hasher::hash_string(&report_json);
+
+    if recomputed_hash == scan.report_hash {
+        super::log_message(&app_handle, "INFO", "Report integrity check: PASSED");
+        Ok("Integrity check passed — Report hash valid".to_string())
+    } else {
+        super::log_message(&app_handle, "WARN", "Report integrity check: FAILED — Hash mismatch");
+        Ok("Integrity check failed — Hash mismatch. Report data may have been modified after generation.".to_string())
+    }
+}
+
+/// AI advisory analysis — does NOT modify score, severity, grade, or risk level
+#[tauri::command]
+pub async fn request_ai_analysis(
+    model: String,
+    scan_name: String,
+    risk_score: u32,
+    risk_level: String,
+    findings: Vec<scanner::ai::FindingSummaryInfo>,
+    app_handle: tauri::AppHandle,
+) -> Result<scanner::ai::AiAnalysisResponse, String> {
+    super::log_message(&app_handle, "INFO", &format!(
+        "AI advisory analysis requested for '{}' using model: {} (advisory only — does not affect score)",
+        scan_name, model
+    ));
+    scanner::ai::ai_risk_analysis(&model, &scan_name, risk_score, &risk_level, findings).await
 }
 

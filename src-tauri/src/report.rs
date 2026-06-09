@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use super::scanner::types::{ScanResult, Severity, RiskLevel};
+use super::scanner::types::{ScanMode, ScanResult, Severity, RiskLevel};
 
 /// Export scan result to JSON format with enhanced metadata
 pub fn export_to_json(result: &ScanResult, output_path: &Path) -> Result<(), String> {
@@ -54,13 +54,13 @@ pub fn export_to_html(result: &ScanResult, output_path: &Path) -> Result<(), Str
     <title>ShadowRepo Shield Report — {name}</title>
     <style>
         :root {{
-            --color-bg: #09090b;
-            --color-surface: #18181b;
-            --color-border: #27272a;
-            --color-text-primary: #f4f4f5;
-            --color-text-secondary: #a1a1aa;
-            --color-text-muted: #71717a;
-            --color-brand: #6366f1;
+            --color-bg: #0d0f12;
+            --color-surface: #161b22;
+            --color-border: #30363d;
+            --color-text-primary: #f0f6fc;
+            --color-text-secondary: #c9d1d9;
+            --color-text-muted: #8b949e;
+            --color-brand: #1f6feb;
         }}
         body {{
             background: var(--color-bg);
@@ -84,15 +84,15 @@ pub fn export_to_html(result: &ScanResult, output_path: &Path) -> Result<(), Str
         .subtitle {{ color: var(--color-text-secondary); font-size: 14px; margin: 0; }}
         .badge {{
             display: inline-flex; align-items: center; padding: 6px 14px;
-            border-radius: 9999px; font-size: 13px; font-weight: 700;
+            border-radius: 4px; font-size: 13px; font-weight: 700;
             text-transform: uppercase; letter-spacing: 0.05em;
         }}
         .grid {{ display: grid; grid-template-columns: 260px 1fr; gap: 24px; margin-bottom: 32px; }}
-        .card {{ background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 24px; }}
+        .card {{ background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 6px; padding: 24px; }}
         .stats-grid {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }}
         .stat-card {{
-            background: rgba(255, 255, 255, 0.02); border: 1px solid var(--color-border);
-            border-radius: 8px; padding: 16px; display: flex; flex-direction: column;
+            background: rgba(255, 255, 255, 0.04); border: 1px solid var(--color-border);
+            border-radius: 6px; padding: 16px; display: flex; flex-direction: column;
         }}
         .stat-value {{ font-size: 24px; font-weight: 700; margin-bottom: 4px; }}
         .stat-label {{ font-size: 12px; color: var(--color-text-secondary); }}
@@ -101,44 +101,54 @@ pub fn export_to_html(result: &ScanResult, output_path: &Path) -> Result<(), Str
             border-left: 3px solid var(--color-brand); padding-left: 10px;
         }}
         .exec-summary {{
-            background: rgba(99, 102, 241, 0.04); border: 1px solid rgba(99, 102, 241, 0.1);
-            border-radius: 12px; padding: 20px; margin-bottom: 24px; font-size: 14px;
+            background: rgba(31, 111, 235, 0.04); border: 1px solid rgba(31, 111, 235, 0.1);
+            border-radius: 6px; padding: 20px; margin-bottom: 24px; font-size: 14px;
             line-height: 1.7; color: var(--color-text-secondary);
         }}
         .exec-summary strong {{ color: var(--color-text-primary); }}
         .finding-card {{
             background: var(--color-surface); border: 1px solid var(--color-border);
-            border-radius: 12px; padding: 20px; margin-bottom: 16px;
+            border-radius: 6px; padding: 20px; margin-bottom: 16px;
         }}
         .finding-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }}
         .finding-title {{ font-weight: 700; font-size: 15px; }}
         .finding-meta {{ font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px; font-family: monospace; }}
         .code-block {{
-            background: #09090b; border: 1px solid var(--color-border); border-radius: 6px;
+            background: #0d0f12; border: 1px solid var(--color-border); border-radius: 4px;
             padding: 12px; font-family: "JetBrains Mono", Courier, monospace;
-            font-size: 12px; overflow-x: auto; margin-bottom: 12px; color: #e4e4e7;
+            font-size: 12px; overflow-x: auto; margin-bottom: 12px; color: #f0f6fc;
         }}
         .recommendation {{
-            background: rgba(99, 102, 241, 0.05); border-left: 3px solid var(--color-brand);
-            padding: 12px; font-size: 13px; border-radius: 0 6px 6px 0;
+            background: rgba(31, 111, 235, 0.05); border-left: 3px solid var(--color-brand);
+            padding: 12px; font-size: 13px; border-radius: 0 4px 4px 0;
         }}
         .severity-summary {{
             display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
         }}
         .severity-pill {{
-            padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+            padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
         }}
         .disclaimer {{
             background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.1);
-            border-radius: 8px; padding: 16px; font-size: 12px;
+            border-radius: 6px; padding: 16px; font-size: 12px;
             color: var(--color-text-secondary); margin-top: 32px;
         }}
         .privacy-notice {{
-            background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.1);
-            border-radius: 8px; padding: 16px; font-size: 12px;
+            background: rgba(46, 160, 67, 0.04); border: 1px solid rgba(46, 160, 67, 0.1);
+            border-radius: 6px; padding: 16px; font-size: 12px;
             color: var(--color-text-secondary); margin-top: 12px; text-align: center;
         }}
         .meta-row {{ font-size: 12px; color: var(--color-text-muted); margin: 4px 0; font-family: monospace; }}
+        .scan-mode-badge {{
+            display: inline-block; padding: 4px 12px; border-radius: 4px;
+            font-size: 11px; font-weight: 600; margin-top: 8px; letter-spacing: 0.03em;
+        }}
+        .scan-mode-local {{
+            background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2);
+        }}
+        .scan-mode-verified {{
+            background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);
+        }}
         @media print {{ body {{ background: #fff; color: #111; }} .card, .finding-card {{ border-color: #ccc; background: #f9f9f9; }} }}
     </style>
 </head>
@@ -150,6 +160,7 @@ pub fn export_to_html(result: &ScanResult, output_path: &Path) -> Result<(), Str
                 <p class="subtitle">{name}</p>
                 <div class="meta-row">Scan ID: {scan_id}</div>
                 <div class="meta-row">Generated: {scan_date}</div>
+                <div class="scan-mode-badge {scan_mode_class}">{scan_mode_label}</div>
             </div>
             <div class="badge" style="background: {risk_bg}; color: {risk_color}; border: 1px solid {risk_color}20;">
                 {risk_label} — {score}/100
@@ -189,10 +200,10 @@ pub fn export_to_html(result: &ScanResult, output_path: &Path) -> Result<(), Str
 
         <div class="section-title">Severity Breakdown</div>
         <div class="severity-summary">
-            <div class="severity-pill" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">Critical: {critical}</div>
-            <div class="severity-pill" style="background: rgba(249, 115, 22, 0.1); color: #f97316;">High: {high}</div>
-            <div class="severity-pill" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">Medium: {medium}</div>
-            <div class="severity-pill" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">Low: {low}</div>
+            <div class="severity-pill" style="background: rgba(248, 81, 73, 0.1); color: #f85149;">Critical: {critical}</div>
+            <div class="severity-pill" style="background: rgba(219, 109, 40, 0.1); color: #db6d28;">High: {high}</div>
+            <div class="severity-pill" style="background: rgba(210, 153, 34, 0.1); color: #d29922;">Medium: {medium}</div>
+            <div class="severity-pill" style="background: rgba(46, 160, 67, 0.1); color: #2ea043;">Low: {low}</div>
         </div>
 
         <div class="section-title">Security Findings ({total_findings})</div>
@@ -200,6 +211,14 @@ pub fn export_to_html(result: &ScanResult, output_path: &Path) -> Result<(), Str
         name = escape_html(&result.name),
         scan_id = result.id,
         scan_date = result.scan_date,
+        scan_mode_class = match result.scan_mode {
+            ScanMode::Verified => "scan-mode-verified",
+            ScanMode::Local => "scan-mode-local",
+        },
+        scan_mode_label = match result.scan_mode {
+            ScanMode::Verified => "\u{2705} CI Verified Foundation",
+            ScanMode::Local => "\u{26A0}\u{FE0F} Local Scan \u{2014} Not independently verified",
+        },
         risk_bg = risk_bg,
         risk_color = risk_color,
         risk_label = risk_label,
@@ -224,11 +243,11 @@ pub fn export_to_html(result: &ScanResult, output_path: &Path) -> Result<(), Str
 
         for finding in sev_findings {
             let (f_color, f_bg) = match finding.severity {
-                Severity::Critical => ("#ef4444", "rgba(239, 68, 68, 0.08)"),
-                Severity::High => ("#f97316", "rgba(249, 115, 22, 0.08)"),
-                Severity::Medium => ("#f59e0b", "rgba(245, 158, 11, 0.08)"),
-                Severity::Low => ("#10b981", "rgba(16, 185, 129, 0.08)"),
-                Severity::Informational => ("#6b7280", "rgba(107, 114, 128, 0.08)"),
+                Severity::Critical => ("#f85149", "rgba(248, 81, 73, 0.08)"),
+                Severity::High => ("#db6d28", "rgba(219, 109, 40, 0.08)"),
+                Severity::Medium => ("#d29922", "rgba(210, 153, 34, 0.08)"),
+                Severity::Low => ("#2ea043", "rgba(46, 160, 67, 0.08)"),
+                Severity::Informational => ("#8b949e", "rgba(139, 148, 158, 0.08)"),
             };
 
             let line_info = finding
@@ -327,13 +346,12 @@ pub fn export_to_pdf(result: &ScanResult, output_path: &Path) -> Result<(), Stri
     // Helper closure state
     struct PdfWriter {
         y: f32,
-        page_height: f32,
         margin: f32,
     }
 
     impl PdfWriter {
         fn new() -> Self {
-            Self { y: 272.0, page_height: 297.0, margin: 25.0 }
+            Self { y: 272.0, margin: 25.0 }
         }
 
         fn needs_new_page(&self, lines_needed: f32) -> bool {

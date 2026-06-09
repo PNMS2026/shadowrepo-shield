@@ -3617,7 +3617,7 @@ dependencies = [
 
 [[package]]
 name = "shadowrepo-shield"
-version = "1.0.1"
+version = "1.4.0"
 dependencies = [
  "chrono",
  "hex",

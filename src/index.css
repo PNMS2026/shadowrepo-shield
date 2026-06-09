@@ -6,27 +6,27 @@
    ============================================================ */
 
 @theme {
-  --color-surface-900: #0a0e1a;
-  --color-surface-800: #0f1629;
-  --color-surface-700: #151d35;
-  --color-surface-600: #1c2541;
-  --color-surface-500: #243052;
-  --color-surface-400: #2d3b63;
-  --color-surface-300: #3d4f7a;
+  --color-surface-900: #0d0f12;
+  --color-surface-800: #161b22;
+  --color-surface-700: #21262d;
+  --color-surface-600: #30363d;
+  --color-surface-500: #3d444d;
+  --color-surface-400: #48515c;
+  --color-surface-300: #566170;
 
-  --color-brand-primary: #6366f1;
-  --color-brand-secondary: #8b5cf6;
-  --color-brand-accent: #a78bfa;
+  --color-brand-primary: #1f6feb;
+  --color-brand-secondary: #3b82f6;
+  --color-brand-accent: #58a6ff;
 
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-info: #3b82f6;
-  --color-orange: #f97316;
+  --color-success: #2ea043;
+  --color-warning: #ca8a04;
+  --color-danger: #f85149;
+  --color-info: #58a6ff;
+  --color-orange: #db6d28;
 
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-muted: #64748b;
+  --color-text-primary: #f0f6fc;
+  --color-text-secondary: #c9d1d9;
+  --color-text-muted: #8b949e;
 
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
@@ -90,7 +90,7 @@ body {
   width: 240px;
   min-width: 240px;
   background: var(--color-surface-800);
-  border-right: 1px solid rgba(99, 102, 241, 0.08);
+  border-right: 1px solid var(--color-surface-600);
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -103,19 +103,19 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid rgba(99, 102, 241, 0.08);
+  border-bottom: 1px solid var(--color-surface-600);
 }
 
 .sidebar-logo .logo-icon {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-secondary));
+  border-radius: 6px;
+  background: var(--color-brand-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  color: white;
 }
 
 .sidebar-logo .logo-text {
@@ -155,7 +155,7 @@ body {
   align-items: center;
   gap: 10px;
   padding: 9px 12px;
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--color-text-secondary);
   text-decoration: none;
   font-size: 13px;
@@ -166,12 +166,12 @@ body {
 }
 
 .nav-item:hover {
-  background: rgba(99, 102, 241, 0.08);
+  background: var(--color-surface-700);
   color: var(--color-text-primary);
 }
 
 .nav-item.active {
-  background: rgba(99, 102, 241, 0.12);
+  background: var(--color-surface-600);
   color: var(--color-brand-accent);
 }
 
@@ -195,7 +195,7 @@ body {
 
 .sidebar-footer {
   padding: 16px;
-  border-top: 1px solid rgba(99, 102, 241, 0.08);
+  border-top: 1px solid var(--color-surface-600);
 }
 
 .sidebar-footer .version {
@@ -237,22 +237,20 @@ body {
 /* ---- Cards ---- */
 .card {
   background: var(--color-surface-800);
-  border: 1px solid rgba(99, 102, 241, 0.06);
-  border-radius: 12px;
+  border: 1px solid var(--color-surface-600);
+  border-radius: 6px;
   padding: 20px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .card:hover {
-  border-color: rgba(99, 102, 241, 0.12);
+  border-color: var(--color-surface-500);
 }
 
 .card-glass {
-  background: rgba(15, 22, 41, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(99, 102, 241, 0.1);
-  border-radius: 12px;
+  background: var(--color-surface-800);
+  border: 1px solid var(--color-surface-600);
+  border-radius: 6px;
   padding: 20px;
 }
 
@@ -266,25 +264,23 @@ body {
 
 .stat-card {
   background: var(--color-surface-800);
-  border: 1px solid rgba(99, 102, 241, 0.06);
-  border-radius: 12px;
+  border: 1px solid var(--color-surface-600);
+  border-radius: 6px;
   padding: 18px 20px;
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .stat-card:hover {
-  border-color: rgba(99, 102, 241, 0.15);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  border-color: var(--color-surface-500);
 }
 
 .stat-icon {
   width: 42px;
   height: 42px;
-  border-radius: 10px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -318,8 +314,8 @@ body {
 /* ---- Tables ---- */
 .table-container {
   background: var(--color-surface-800);
-  border: 1px solid rgba(99, 102, 241, 0.06);
-  border-radius: 12px;
+  border: 1px solid var(--color-surface-600);
+  border-radius: 6px;
   overflow: hidden;
 }
 
@@ -328,7 +324,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(99, 102, 241, 0.06);
+  border-bottom: 1px solid var(--color-surface-600);
 }
 
 .table-header h2 {
@@ -351,13 +347,13 @@ thead th {
   color: var(--color-text-muted);
   text-align: left;
   background: var(--color-surface-700);
-  border-bottom: 1px solid rgba(99, 102, 241, 0.06);
+  border-bottom: 1px solid var(--color-surface-600);
 }
 
 tbody td {
   padding: 12px 16px;
   font-size: 13px;
-  border-bottom: 1px solid rgba(99, 102, 241, 0.04);
+  border-bottom: 1px solid var(--color-surface-700);
   color: var(--color-text-secondary);
 }
 
@@ -367,7 +363,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: rgba(99, 102, 241, 0.04);
+  background: var(--color-surface-700);
 }
 
 tbody tr:last-child td {
@@ -379,7 +375,7 @@ tbody tr:last-child td {
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -388,23 +384,33 @@ tbody tr:last-child td {
 }
 
 .badge-critical {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  background: var(--color-danger);
+  color: white;
 }
 
 .badge-high {
-  background: rgba(249, 115, 22, 0.15);
-  color: #f97316;
+  background: var(--color-orange);
+  color: white;
 }
 
 .badge-medium {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  background: var(--color-warning);
+  color: white;
 }
 
 .badge-low {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  background: var(--color-success);
+  color: white;
+}
+
+.badge-informational {
+  background: var(--color-surface-500);
+  color: white;
+}
+
+.badge-review_recommended {
+  background: var(--color-brand-primary);
+  color: white;
 }
 
 /* ---- Buttons ---- */
@@ -412,48 +418,45 @@ tbody tr:last-child td {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 18px;
-  border-radius: 8px;
+  padding: 8px 16px;
+  border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   text-decoration: none;
   white-space: nowrap;
   font-family: var(--font-sans);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-secondary));
+  background: var(--color-brand-primary);
   color: white;
-  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.3);
 }
 
 .btn-primary:hover {
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
-  transform: translateY(-1px);
+  background: var(--color-brand-accent);
 }
 
 .btn-secondary {
-  background: var(--color-surface-600);
+  background: var(--color-surface-700);
   color: var(--color-text-primary);
-  border: 1px solid rgba(99, 102, 241, 0.1);
+  border: 1px solid var(--color-surface-600);
 }
 
 .btn-secondary:hover {
-  background: var(--color-surface-500);
-  border-color: rgba(99, 102, 241, 0.2);
+  background: var(--color-surface-600);
+  border-color: var(--color-surface-500);
 }
 
 .btn-danger {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: var(--color-danger);
+  color: white;
 }
 
 .btn-danger:hover {
-  background: rgba(239, 68, 68, 0.25);
+  opacity: 0.9;
 }
 
 .btn-ghost {
@@ -462,18 +465,20 @@ tbody tr:last-child td {
 }
 
 .btn-ghost:hover {
-  background: rgba(99, 102, 241, 0.08);
+  background: var(--color-surface-700);
   color: var(--color-text-primary);
 }
 
 .btn-sm {
-  padding: 6px 12px;
+  padding: 5px 10px;
   font-size: 12px;
+  border-radius: 4px;
 }
 
 .btn-lg {
-  padding: 12px 24px;
+  padding: 10px 20px;
   font-size: 14px;
+  border-radius: 6px;
 }
 
 .btn:disabled {
@@ -487,18 +492,17 @@ tbody tr:last-child td {
   width: 100%;
   padding: 10px 14px;
   background: var(--color-surface-700);
-  border: 1px solid rgba(99, 102, 241, 0.1);
-  border-radius: 8px;
+  border: 1px solid var(--color-surface-600);
+  border-radius: 6px;
   color: var(--color-text-primary);
   font-size: 13px;
   font-family: var(--font-sans);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.15s ease;
   outline: none;
 }
 
 .input:focus {
   border-color: var(--color-brand-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .input::placeholder {
@@ -555,28 +559,27 @@ tbody tr:last-child td {
 
 /* ---- Drop Zone ---- */
 .drop-zone {
-  border: 2px dashed rgba(99, 102, 241, 0.2);
-  border-radius: 16px;
+  border: 1px solid var(--color-surface-600);
+  border-radius: 6px;
   padding: 48px;
   text-align: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   cursor: pointer;
-  background: rgba(99, 102, 241, 0.02);
+  background: var(--color-surface-800);
 }
 
 .drop-zone:hover,
 .drop-zone.drag-over {
   border-color: var(--color-brand-primary);
-  background: rgba(99, 102, 241, 0.06);
-  box-shadow: 0 0 30px rgba(99, 102, 241, 0.1);
+  background: var(--color-surface-700);
 }
 
 .drop-zone-icon {
   width: 64px;
   height: 64px;
   margin: 0 auto 16px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+  border-radius: 6px;
+  background: var(--color-surface-700);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -650,9 +653,9 @@ tbody tr:last-child td {
 
 /* ---- Finding Cards ---- */
 .finding-card {
-  background: var(--color-surface-700);
-  border: 1px solid rgba(99, 102, 241, 0.06);
-  border-radius: 10px;
+  background: var(--color-surface-800);
+  border: 1px solid var(--color-surface-600);
+  border-radius: 6px;
   padding: 14px 16px;
   display: flex;
   gap: 12px;
@@ -660,11 +663,11 @@ tbody tr:last-child td {
 }
 
 .finding-card:hover {
-  border-color: rgba(99, 102, 241, 0.12);
+  border-color: var(--color-surface-500);
 }
 
 .finding-severity-bar {
-  width: 3px;
+  width: 4px;
   border-radius: 2px;
   flex-shrink: 0;
 }
@@ -694,9 +697,10 @@ tbody tr:last-child td {
   font-size: 12px;
   color: var(--color-text-secondary);
   padding: 8px 10px;
-  background: var(--color-surface-800);
-  border-radius: 6px;
+  background: var(--color-surface-700);
+  border-radius: 4px;
   margin-top: 6px;
+  border-left: 3px solid var(--color-brand-primary);
 }
 
 /* ---- Progress Bar ---- */
@@ -711,7 +715,7 @@ tbody tr:last-child td {
 .progress-fill {
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-secondary));
+  background: var(--color-brand-primary);
   transition: width 0.3s ease;
 }
 
@@ -719,8 +723,8 @@ tbody tr:last-child td {
 .scan-progress-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 14, 26, 0.85);
-  backdrop-filter: blur(8px);
+  background: rgba(13, 15, 18, 0.85);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -729,12 +733,11 @@ tbody tr:last-child td {
 
 .scan-progress-card {
   background: var(--color-surface-800);
-  border: 1px solid rgba(99, 102, 241, 0.1);
-  border-radius: 16px;
+  border: 1px solid var(--color-surface-600);
+  border-radius: 6px;
   padding: 36px 48px;
   text-align: center;
   min-width: 400px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 /* ---- Animations ---- */
@@ -816,7 +819,7 @@ tbody tr:last-child td {
   align-items: center;
   justify-content: space-between;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(99, 102, 241, 0.04);
+  border-bottom: 1px solid var(--color-surface-700);
 }
 
 .setting-row:last-child {
@@ -908,8 +911,8 @@ tbody tr:last-child td {
   appearance: none;
   padding: 10px 36px 10px 14px;
   background: var(--color-surface-700) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
-  border: 1px solid rgba(99, 102, 241, 0.1);
-  border-radius: 8px;
+  border: 1px solid var(--color-surface-600);
+  border-radius: 6px;
   color: var(--color-text-primary);
   font-size: 13px;
   font-family: var(--font-sans);
@@ -919,13 +922,12 @@ tbody tr:last-child td {
 
 .select:focus {
   border-color: var(--color-brand-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 /* ---- Verify Results ---- */
 .verify-result {
   padding: 20px;
-  border-radius: 12px;
+  border-radius: 6px;
   margin-top: 20px;
 }
 
@@ -943,7 +945,7 @@ tbody tr:last-child td {
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(99, 102, 241, 0.06);
+  border-bottom: 1px solid var(--color-surface-700);
 }
 
 .verify-field:last-child {

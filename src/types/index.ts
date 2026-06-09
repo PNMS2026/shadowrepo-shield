@@ -17,6 +17,8 @@ export type Category =
 
 export type ScanStatus = "pending" | "scanning" | "completed" | "failed";
 
+export type ScanMode = "local" | "verified";
+
 export type ReportFormat = "json" | "html" | "pdf";
 
 export interface Finding {
@@ -44,6 +46,8 @@ export interface ScanResult {
   repo_hash: string;
   report_hash: string;
   status: ScanStatus;
+  scan_mode: ScanMode;
+  scanner_signature: string | null;
   findings: Finding[];
   blockchain_tx: string | null;
   blockchain_network: string | null;
@@ -59,6 +63,7 @@ export interface ScanSummary {
   total_files: number;
   total_findings: number;
   status: ScanStatus;
+  scan_mode: ScanMode;
   blockchain_tx: string | null;
 }
 
@@ -69,6 +74,8 @@ export interface Settings {
   blockchain_network: string;
   contract_address: string;
   rpc_url: string;
+  ai_enabled: boolean;
+  ai_model: string;
 }
 
 export interface BlockchainProof {
@@ -85,6 +92,14 @@ export interface DashboardStats {
   critical_findings: number;
   average_risk: number;
   repos_scanned: number;
+  verified_scans: number;
+}
+
+/// AI advisory analysis — does NOT affect score, severity, grade, or risk level
+export interface AiAnalysis {
+  summary: string;
+  recommendations: string[];
+  confidence: string;
 }
 
 export const SEVERITY_ORDER: Record<Severity, number> = {
@@ -109,21 +124,21 @@ export const RISK_LEVEL_CONFIG: Record<
   RiskLevel,
   { label: string; color: string; bg: string }
 > = {
-  low: { label: "Low Risk", color: "#10B981", bg: "rgba(16, 185, 129, 0.15)" },
+  low: { label: "Low Risk", color: "#2ea043", bg: "rgba(46, 160, 67, 0.15)" },
   review_recommended: {
     label: "Review Recommended",
-    color: "#F59E0B",
-    bg: "rgba(245, 158, 11, 0.15)",
+    color: "#d29922",
+    bg: "rgba(210, 153, 34, 0.15)",
   },
   high: {
     label: "High Risk",
-    color: "#F97316",
-    bg: "rgba(249, 115, 22, 0.15)",
+    color: "#db6d28",
+    bg: "rgba(219, 109, 40, 0.15)",
   },
   critical: {
     label: "Critical Threat Indicators Found",
-    color: "#EF4444",
-    bg: "rgba(239, 68, 68, 0.15)",
+    color: "#f85149",
+    bg: "rgba(248, 81, 73, 0.15)",
   },
 };
 

@@ -44,6 +44,16 @@ pub enum ScanStatus {
     Failed,
 }
 
+/// Scan mode — determines the trust level of the scan
+/// Local: user-initiated desktop scan, self-reported, not independently verified
+/// Verified: scanned by official ShadowRepo Shield binary in CI/CD pipeline
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ScanMode {
+    Local,
+    Verified,
+}
+
 /// A single security finding
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Finding {
@@ -73,6 +83,8 @@ pub struct ScanResult {
     pub repo_hash: String,
     pub report_hash: String,
     pub status: ScanStatus,
+    pub scan_mode: ScanMode,
+    pub scanner_signature: Option<String>,
     pub findings: Vec<Finding>,
     pub blockchain_tx: Option<String>,
     pub blockchain_network: Option<String>,
@@ -90,6 +102,7 @@ pub struct ScanSummary {
     pub total_files: u32,
     pub total_findings: u32,
     pub status: ScanStatus,
+    pub scan_mode: ScanMode,
     pub blockchain_tx: Option<String>,
 }
 
@@ -102,6 +115,8 @@ pub struct Settings {
     pub blockchain_network: String,
     pub contract_address: String,
     pub rpc_url: String,
+    pub ai_enabled: bool,
+    pub ai_model: String,
 }
 
 impl Default for Settings {
@@ -113,6 +128,8 @@ impl Default for Settings {
             blockchain_network: "hardhat".to_string(),
             contract_address: "0x5FbDB2315678afecb367f032d93F642f64180aa3".to_string(),
             rpc_url: "http://127.0.0.1:8545".to_string(),
+            ai_enabled: false,
+            ai_model: "mock".to_string(),
         }
     }
 }
@@ -124,6 +141,7 @@ pub struct DashboardStats {
     pub critical_findings: u32,
     pub average_risk: u32,
     pub repos_scanned: u32,
+    pub verified_scans: u32,
 }
 
 /// A pattern rule for the scanner

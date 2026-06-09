@@ -7,6 +7,7 @@ import {
   FolderSearch,
   ArrowRight,
   ScanSearch,
+  CheckCircle2,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import StatCard from "../components/StatCard";
@@ -22,6 +23,7 @@ export default function Dashboard() {
     critical_findings: 0,
     average_risk: 0,
     repos_scanned: 0,
+    verified_scans: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -47,22 +49,22 @@ export default function Dashboard() {
     {
       name: "Critical",
       value: scans.filter((s) => s.risk_level === "critical").length,
-      color: "#ef4444",
+      color: "#f85149",
     },
     {
       name: "High",
       value: scans.filter((s) => s.risk_level === "high").length,
-      color: "#f97316",
+      color: "#db6d28",
     },
     {
       name: "Review Recommended",
       value: scans.filter((s) => s.risk_level === "review_recommended").length,
-      color: "#f59e0b",
+      color: "#d29922",
     },
     {
       name: "Low",
       value: scans.filter((s) => s.risk_level === "low").length,
-      color: "#10b981",
+      color: "#2ea043",
     },
   ].filter((d) => d.value > 0);
 
@@ -119,29 +121,36 @@ export default function Dashboard() {
           icon={<FolderSearch size={20} />}
           value={stats.total_scans}
           label="Total Scans"
-          color="#6366f1"
-          bgColor="rgba(99, 102, 241, 0.12)"
+          color="var(--color-brand-accent)"
+          bgColor="var(--color-surface-700)"
         />
         <StatCard
           icon={<AlertTriangle size={20} />}
           value={stats.critical_findings}
-          label="Critical Scans"
-          color="#ef4444"
-          bgColor="rgba(239, 68, 68, 0.12)"
+          label="Critical Findings"
+          color="var(--color-danger)"
+          bgColor="rgba(248, 81, 73, 0.1)"
         />
         <StatCard
           icon={<Activity size={20} />}
           value={stats.average_risk}
           label="Avg Risk Score"
-          color="#f59e0b"
-          bgColor="rgba(245, 158, 11, 0.12)"
+          color="var(--color-warning)"
+          bgColor="rgba(210, 153, 34, 0.1)"
         />
         <StatCard
           icon={<Shield size={20} />}
           value={stats.repos_scanned}
           label="Repos Scanned"
+          color="var(--color-success)"
+          bgColor="rgba(46, 160, 67, 0.1)"
+        />
+        <StatCard
+          icon={<CheckCircle2 size={20} />}
+          value={stats.verified_scans}
+          label="Verified Scans"
           color="#10b981"
-          bgColor="rgba(16, 185, 129, 0.12)"
+          bgColor="rgba(16, 185, 129, 0.1)"
         />
       </div>
 

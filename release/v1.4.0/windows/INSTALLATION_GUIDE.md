@@ -6,44 +6,9 @@ This guide walks you through installing, setting up, and running the **ShadowRep
 
 ## 1. Prerequisites
 
-To build and run **ShadowRepo Shield** from source, you need to ensure the following development tools are installed:
-
-| Software | Purpose | Installation Link / Command |
-| -------- | ------- | --------------------------- |
-| **Node.js** (v18+) | Frontend framework and Hardhat tests | [Download Node.js LTS](https://nodejs.org/) |
-| **Rust & Cargo** | Core scanner analysis engine | [Download Rustup](https://rustup.rs/) |
-| **Git** | Repository cloning and version control | [Download Git for Windows](https://git-scm.com/) |
-| **VS C++ Build Tools** | MSVC compilation target for Tauri | [Download Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) |
-
-### 🛠️ Installing All Prerequisites on Windows
-
-You can install all required tools automatically using the following commands:
-
-#### Option A: Using Windows Package Manager (winget)
-Open an **Administrator PowerShell** window and run:
-```powershell
-# Install Node.js LTS
-winget install --id OpenJS.NodeJS.LTS -e
-
-# Install Git
-winget install --id Git.Git -e
-
-# Install Rustup
-winget install --id Rustlang.Rustup -e
-
-# Install MSVC Build Tools
-winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--passive --locale en-US --add Microsoft.VisualStudio.Workload.VCTools"
-```
-*Note: Restart your terminal/computer after the installations complete to refresh your system PATH.*
-
-#### Option B: Manual Installation Steps
-1. **Node.js**: Download and run the installer from the [Node.js Official Website](https://nodejs.org/).
-2. **Git**: Download and run the installer from [Git for Windows](https://git-scm.com/).
-3. **Rust & Cargo**: Download and run `rustup-init.exe` from [rustup.rs](https://rustup.rs/).
-4. **Visual Studio C++ Build Tools**:
-   * Download the Visual Studio Installer from [VisualStudio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
-   * Select **Desktop development with C++** workload in the installer.
-   * Ensure that **MSVC v143 - VS 2022 C++ x64/x86 build tools** and **Windows 10/11 SDK** components are checked.
+To use the on-chain proof anchoring features during this local demo:
+- Ensure **Node.js** (v18 or newer) is installed on your system.
+- Open a terminal and run `node -v` to confirm.
 
 ---
 
@@ -53,13 +18,13 @@ The release contains two Windows installer options:
 
 ### Option A: MSI Installer (Recommended)
 1. Double-click the MSI installer package:
-   `release\v1.0.0\windows\ShadowRepo-Shield-v1.0.0.msi`
+   `release\v1.4.0\windows\ShadowRepo-Shield-v1.4.0.msi`
 2. Follow the standard Windows Setup Wizard instructions to install.
 3. Locate **ShadowRepo Shield** in your Windows Start Menu to run the app.
 
 ### Option B: NSIS Setup Executable
 1. Double-click the setup file:
-   `release\v1.0.0\windows\ShadowRepo-Shield-v1.0.0-Setup.exe`
+   `release\v1.4.0\windows\ShadowRepo-Shield-v1.4.0-Setup.exe`
 2. The installer will install the app and launch it immediately.
 
 ---
@@ -77,7 +42,7 @@ For the MVP proof anchoring demo to connect successfully, you need to run the lo
    npx hardhat --config hardhat.config.cjs node
    ```
    *Keep this terminal window open. It runs a local node at `http://127.0.0.1:8545` and provides 20 test accounts pre-funded with 10,000 mock ETH.*
-3. (First time setup only) Deploy the smart contract in a separate terminal:
+3. Deploy the smart contract in a separate terminal:
    ```bash
    npx hardhat --config hardhat.config.cjs run scripts/deploy.cjs --network localhost
    ```

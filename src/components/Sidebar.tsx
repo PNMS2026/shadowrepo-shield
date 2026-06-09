@@ -49,7 +49,7 @@ export default function Sidebar() {
 
       <div className="sidebar-footer">
         <div className="version" style={{ marginTop: "10px" }}>
-          v1.0.1 • Local-First
+          v1.4.0 • Local-First
         </div>
       </div>
     </aside>

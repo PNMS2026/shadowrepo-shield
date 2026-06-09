@@ -1,0 +1,2 @@
+a841f95b8afd326b6e7ba2a6b5ac2041b61b4d4497059df514e7016e9c4493b2  ShadowRepo-Shield-v1.4.0-Setup.exe
+f76b73bed7974ee10a66eb103d87cef93a5f7d7c71d5451c65c7d6c59bdcfdef  ShadowRepo-Shield-v1.4.0.msi

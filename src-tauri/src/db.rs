@@ -1,7 +1,7 @@
 use rusqlite::{params, Connection, Result};
 use std::path::Path;
 use super::scanner::types::{
-    Category, DashboardStats, Finding, RiskLevel, ScanResult, ScanStatus, ScanSummary, Settings,
+    Category, DashboardStats, Finding, RiskLevel, ScanMode, ScanResult, ScanStatus, ScanSummary, Settings,
     Severity,
 };
 
@@ -59,10 +59,20 @@ pub fn init_db(db_path: &Path) -> Result<()> {
             auto_delete_temp INTEGER NOT NULL,
             blockchain_network TEXT NOT NULL,
             contract_address TEXT NOT NULL,
-            rpc_url TEXT NOT NULL
+            rpc_url TEXT NOT NULL,
+            ai_enabled INTEGER NOT NULL DEFAULT 0,
+            ai_model TEXT NOT NULL DEFAULT 'mock'
         );",
         [],
     )?;
+
+    // Dynamically upgrade existing settings tables with missing columns
+    let _ = conn.execute("ALTER TABLE settings ADD COLUMN ai_enabled INTEGER NOT NULL DEFAULT 0;", []);
+    let _ = conn.execute("ALTER TABLE settings ADD COLUMN ai_model TEXT NOT NULL DEFAULT 'mock';", []);
+
+    // v1.4.0: Add scan_mode and scanner_signature columns to scans table
+    let _ = conn.execute("ALTER TABLE scans ADD COLUMN scan_mode TEXT NOT NULL DEFAULT 'local';", []);
+    let _ = conn.execute("ALTER TABLE scans ADD COLUMN scanner_signature TEXT;", []);
 
     // Insert default settings if not exists
     let count: i64 = conn.query_row(
@@ -76,8 +86,8 @@ pub fn init_db(db_path: &Path) -> Result<()> {
         let default_storage = parent_dir.join("reports").to_string_lossy().to_string();
 
         conn.execute(
-            "INSERT INTO settings (id, storage_path, offline_mode, auto_delete_temp, blockchain_network, contract_address, rpc_url)
-             VALUES (1, ?1, 0, 1, 'hardhat', '0x5FbDB2315678afecb367f032d93F642f64180aa3', 'http://127.0.0.1:8545');",
+            "INSERT INTO settings (id, storage_path, offline_mode, auto_delete_temp, blockchain_network, contract_address, rpc_url, ai_enabled, ai_model)
+             VALUES (1, ?1, 0, 1, 'hardhat', '0x5FbDB2315678afecb367f032d93F642f64180aa3', 'http://127.0.0.1:8545', 0, 'mock');",
             params![default_storage],
         )?;
     }
@@ -93,8 +103,8 @@ pub fn save_scan(db_path: &Path, result: &ScanResult) -> Result<()> {
     // Insert scan
     tx.execute(
         "INSERT OR REPLACE INTO scans (
-            id, name, path, scan_date, risk_score, risk_level, total_files, total_findings, repo_hash, report_hash, status, blockchain_tx, blockchain_network
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13);",
+            id, name, path, scan_date, risk_score, risk_level, total_files, total_findings, repo_hash, report_hash, status, scan_mode, scanner_signature, blockchain_tx, blockchain_network
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15);",
         params![
             result.id,
             result.name,
@@ -107,6 +117,8 @@ pub fn save_scan(db_path: &Path, result: &ScanResult) -> Result<()> {
             result.repo_hash,
             result.report_hash,
             format!("{:?}", result.status).to_lowercase(),
+            format!("{:?}", result.scan_mode).to_lowercase(),
+            result.scanner_signature,
             result.blockchain_tx,
             result.blockchain_network
         ],
@@ -145,7 +157,7 @@ pub fn get_scan(db_path: &Path, scan_id: &str) -> Result<Option<ScanResult>> {
     let conn = Connection::open(db_path)?;
 
     let mut stmt = conn.prepare(
-        "SELECT id, name, path, scan_date, risk_score, risk_level, total_files, total_findings, repo_hash, report_hash, status, blockchain_tx, blockchain_network
+        "SELECT id, name, path, scan_date, risk_score, risk_level, total_files, total_findings, repo_hash, report_hash, status, scan_mode, scanner_signature, blockchain_tx, blockchain_network
          FROM scans WHERE id = ?1;"
     )?;
 
@@ -165,6 +177,12 @@ pub fn get_scan(db_path: &Path, scan_id: &str) -> Result<Option<ScanResult>> {
             _ => ScanStatus::Completed,
         };
 
+        let scan_mode_str: String = row.get(11)?;
+        let scan_mode = match scan_mode_str.as_str() {
+            "verified" => ScanMode::Verified,
+            _ => ScanMode::Local,
+        };
+
         Ok(ScanResult {
             id: row.get(0)?,
             name: row.get(1)?,
@@ -177,9 +195,11 @@ pub fn get_scan(db_path: &Path, scan_id: &str) -> Result<Option<ScanResult>> {
             repo_hash: row.get(8)?,
             report_hash: row.get(9)?,
             status,
+            scan_mode,
+            scanner_signature: row.get(12)?,
             findings: Vec::new(),
-            blockchain_tx: row.get(11)?,
-            blockchain_network: row.get(12)?,
+            blockchain_tx: row.get(13)?,
+            blockchain_network: row.get(14)?,
         })
     });
 
@@ -242,7 +262,7 @@ pub fn get_scan_history(db_path: &Path) -> Result<Vec<ScanSummary>> {
     let conn = Connection::open(db_path)?;
 
     let mut stmt = conn.prepare(
-        "SELECT id, name, path, scan_date, risk_score, risk_level, total_files, total_findings, status, blockchain_tx
+        "SELECT id, name, path, scan_date, risk_score, risk_level, total_files, total_findings, status, scan_mode, blockchain_tx
          FROM scans ORDER BY scan_date DESC;"
     )?;
 
@@ -262,6 +282,12 @@ pub fn get_scan_history(db_path: &Path) -> Result<Vec<ScanSummary>> {
             _ => ScanStatus::Completed,
         };
 
+        let scan_mode_str: String = row.get(9)?;
+        let scan_mode = match scan_mode_str.as_str() {
+            "verified" => ScanMode::Verified,
+            _ => ScanMode::Local,
+        };
+
         Ok(ScanSummary {
             id: row.get(0)?,
             name: row.get(1)?,
@@ -272,7 +298,8 @@ pub fn get_scan_history(db_path: &Path) -> Result<Vec<ScanSummary>> {
             total_files: row.get(6)?,
             total_findings: row.get(7)?,
             status,
-            blockchain_tx: row.get(9)?,
+            scan_mode,
+            blockchain_tx: row.get(10)?,
         })
     })?;
 
@@ -297,12 +324,13 @@ pub fn get_settings(db_path: &Path) -> Result<Settings> {
     let conn = Connection::open(db_path)?;
 
     let settings = conn.query_row(
-        "SELECT storage_path, offline_mode, auto_delete_temp, blockchain_network, contract_address, rpc_url
+        "SELECT storage_path, offline_mode, auto_delete_temp, blockchain_network, contract_address, rpc_url, ai_enabled, ai_model
          FROM settings WHERE id = 1;",
         [],
         |row| {
             let offline_mode: i32 = row.get(1)?;
             let auto_delete_temp: i32 = row.get(2)?;
+            let ai_enabled: i32 = row.get(6)?;
 
             Ok(Settings {
                 storage_path: row.get(0)?,
@@ -311,6 +339,8 @@ pub fn get_settings(db_path: &Path) -> Result<Settings> {
                 blockchain_network: row.get(3)?,
                 contract_address: row.get(4)?,
                 rpc_url: row.get(5)?,
+                ai_enabled: ai_enabled != 0,
+                ai_model: row.get(7)?,
             })
         },
     )?;
@@ -329,7 +359,9 @@ pub fn update_settings(db_path: &Path, settings: &Settings) -> Result<()> {
             auto_delete_temp = ?3,
             blockchain_network = ?4,
             contract_address = ?5,
-            rpc_url = ?6
+            rpc_url = ?6,
+            ai_enabled = ?7,
+            ai_model = ?8
          WHERE id = 1;",
         params![
             settings.storage_path,
@@ -337,7 +369,9 @@ pub fn update_settings(db_path: &Path, settings: &Settings) -> Result<()> {
             if settings.auto_delete_temp { 1 } else { 0 },
             settings.blockchain_network,
             settings.contract_address,
-            settings.rpc_url
+            settings.rpc_url,
+            if settings.ai_enabled { 1 } else { 0 },
+            settings.ai_model
         ],
     )?;
 
@@ -389,10 +423,17 @@ pub fn get_dashboard_stats(db_path: &Path) -> Result<DashboardStats> {
         |row| row.get(0),
     )?;
 
+    let verified_scans: u32 = conn.query_row(
+        "SELECT COUNT(*) FROM scans WHERE scan_mode = 'verified';",
+        [],
+        |row| row.get(0),
+    )?;
+
     Ok(DashboardStats {
         total_scans,
         critical_findings,
         average_risk: average_risk.round() as u32,
         repos_scanned,
+        verified_scans,
     })
 }

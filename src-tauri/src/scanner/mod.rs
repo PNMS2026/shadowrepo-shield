@@ -3,11 +3,12 @@ pub mod patterns;
 pub mod risk;
 pub mod types;
 pub mod walker;
+pub mod ai;
 
 use std::fs;
 use std::path::Path;
 
-use types::{Category, Finding, ScanResult, ScanStatus, Severity};
+use types::{Category, Finding, ScanMode, ScanResult, ScanStatus, Severity};
 
 /// Helper to load and query ignored paths/rules from `.shadowrepoignore`
 pub struct IgnoreList {
@@ -79,7 +80,7 @@ impl IgnoreList {
 }
 
 /// Run a full scan on a directory
-pub fn run_scan(scan_path: &Path, scan_id: &str, scan_name: &str) -> Result<ScanResult, String> {
+pub fn run_scan(scan_path: &Path, scan_id: &str, scan_name: &str, scan_mode: ScanMode, scanner_signature: Option<String>) -> Result<ScanResult, String> {
     let scan_path_str = scan_path
         .to_str()
         .ok_or("Invalid path encoding")?
@@ -467,6 +468,8 @@ pub fn run_scan(scan_path: &Path, scan_id: &str, scan_name: &str) -> Result<Scan
         repo_hash,
         report_hash: String::new(), // Computed after serialization
         status: ScanStatus::Completed,
+        scan_mode,
+        scanner_signature,
         findings: all_findings,
         blockchain_tx: None,
         blockchain_network: None,
@@ -486,7 +489,7 @@ pub fn run_scan(scan_path: &Path, scan_id: &str, scan_name: &str) -> Result<Scan
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::types::RiskLevel;
+    use super::types::{RiskLevel, ScanMode};
     use std::fs;
     use tempfile::tempdir;
 
@@ -529,7 +532,7 @@ mod tests {
         "#;
         fs::write(dir.path().join("price.js"), fetch_code).unwrap();
 
-        let res = run_scan(dir.path(), "test-chainmind", "ChainMind Project").unwrap();
+        let res = run_scan(dir.path(), "test-chainmind", "ChainMind Project", ScanMode::Local, None).unwrap();
         println!("ChainMind style score: {}, level: {:?}", res.risk_score, res.risk_level);
 
         // Expected: Not Critical. Solidity call is High (10), transferFrom is Medium (3), env key is Low (0.5), fetch is Informational (0.25).
@@ -548,7 +551,7 @@ mod tests {
             fs::write(dir.path().join(&file_name), "process.env.PRIVATE_KEY\nprocess.env.PRIVATE_KEY").unwrap();
         }
 
-        let res = run_scan(dir.path(), "test-many-low", "Many Low").unwrap();
+        let res = run_scan(dir.path(), "test-many-low", "Many Low", ScanMode::Local, None).unwrap();
         println!("Many low score: {}, level: {:?}", res.risk_score, res.risk_level);
         
         // Expected: Not Critical. Score capped by Low Severity Cap of 8.0 points.
@@ -567,7 +570,7 @@ mod tests {
         }
         fs::write(dir.path().join("many_env.js"), content).unwrap();
 
-        let res = run_scan(dir.path(), "test-dup", "Duplicate Rule").unwrap();
+        let res = run_scan(dir.path(), "test-dup", "Duplicate Rule", ScanMode::Local, None).unwrap();
         println!("Duplicate rule score: {}, level: {:?}", res.risk_score, res.risk_level);
 
         // Expected: capped at 2 occurrences of `js-private-key-env` -> 2 * 0.5 = 1.0 point -> rounded to 1.
@@ -595,7 +598,7 @@ mod tests {
         "#;
         fs::write(dir.path().join("index.js"), index_js).unwrap();
 
-        let res = run_scan(dir.path(), "test-mal", "Malicious Repo").unwrap();
+        let res = run_scan(dir.path(), "test-mal", "Malicious Repo", ScanMode::Local, None).unwrap();
         println!("Malicious score: {}, level: {:?}", res.risk_score, res.risk_level);
 
         // Expected: Critical Threat Indicators Found / 100
@@ -612,7 +615,7 @@ mod tests {
         "#;
         fs::write(dir.path().join("config.js"), config_js).unwrap();
 
-        let res = run_scan(dir.path(), "test-hardcoded-pk", "Hardcoded PK").unwrap();
+        let res = run_scan(dir.path(), "test-hardcoded-pk", "Hardcoded PK", ScanMode::Local, None).unwrap();
         println!("Hardcoded PK score: {}, level: {:?}", res.risk_score, res.risk_level);
 
         // Expected: Critical
@@ -629,7 +632,7 @@ mod tests {
         "#;
         fs::write(dir.path().join("index.js"), fetch_code).unwrap();
 
-        let res = run_scan(dir.path(), "test-fetch", "Fetch Repo").unwrap();
+        let res = run_scan(dir.path(), "test-fetch", "Fetch Repo", ScanMode::Local, None).unwrap();
         println!("Fetch score: {}, level: {:?}", res.risk_score, res.risk_level);
 
         // Expected: Low/Informational -> 0.25 rounds to 0.
@@ -651,7 +654,7 @@ mod tests {
         let ignore_content = "index.js";
         fs::write(dir.path().join(".shadowrepoignore"), ignore_content).unwrap();
 
-        let res = run_scan(dir.path(), "test-scan-ignored", "Ignored Project").unwrap();
+        let res = run_scan(dir.path(), "test-scan-ignored", "Ignored Project", ScanMode::Local, None).unwrap();
         println!("Ignored score: {}, level: {:?}", res.risk_score, res.risk_level);
 
         assert_eq!(res.risk_score, 0);
@@ -665,7 +668,7 @@ mod tests {
         fs::create_dir_all(&hooks_dir).unwrap();
         fs::write(hooks_dir.join("pre-push"), "#!/bin/sh\necho 'clean'").unwrap();
 
-        let res = run_scan(dir.path(), "test-active-hook", "Active Hook").unwrap();
+        let res = run_scan(dir.path(), "test-active-hook", "Active Hook", ScanMode::Local, None).unwrap();
         assert!(res.findings.iter().any(|f| f.pattern_id == "hook-active-file"));
         assert!(res.findings.iter().any(|f| f.pattern_id == "git-metadata-dir"));
         // Score: hook-active-file (High: 10), git-metadata-dir (Medium: 3). Total = 13. High Risk level start is 40.
@@ -687,7 +690,7 @@ mod tests {
         "#;
         fs::write(hooks_dir.join("pre-push"), payload).unwrap();
 
-        let res = run_scan(dir.path(), "test-hook-malware", "Hook Malware").unwrap();
+        let res = run_scan(dir.path(), "test-hook-malware", "Hook Malware", ScanMode::Local, None).unwrap();
         assert!(res.findings.iter().any(|f| f.pattern_id == "combined-git-hook-malware"));
         assert_eq!(res.risk_score, 100);
         assert_eq!(res.risk_level, RiskLevel::Critical);
@@ -705,7 +708,7 @@ mod tests {
         "#;
         fs::write(hooks_dir.join("pre-push"), payload).unwrap();
 
-        let res = run_scan(dir.path(), "test-bg-download", "Bg Download").unwrap();
+        let res = run_scan(dir.path(), "test-bg-download", "Bg Download", ScanMode::Local, None).unwrap();
         assert!(res.findings.iter().any(|f| f.pattern_id == "combined-bg-silent-download"));
         assert_eq!(res.risk_score, 100);
         assert_eq!(res.risk_level, RiskLevel::Critical);

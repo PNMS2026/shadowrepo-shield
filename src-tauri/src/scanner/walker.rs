@@ -170,7 +170,6 @@ pub fn is_hook_or_ci_path(path: &Path) -> Option<&'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
 
     #[test]
     fn test_binary_extension_detection() {

@@ -14,35 +14,44 @@
 
 ## Download ShadowRepo Shield
 
-The latest Windows release is available from the **GitHub Releases** page.
+The application is officially supported on Windows and Debian-based Linux distributions.
 
-**Latest version:** ShadowRepo Shield **v1.0.1**
+### 🏁 Windows (Stable v1.4.0)
+* **Recommended installer:** `ShadowRepo-Shield-v1.4.0-Setup.exe`
+* **Alternative installer:** `ShadowRepo-Shield-v1.4.0.msi`
+* Refer to [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) for Windows configuration.
 
-**Recommended installer:**
-`ShadowRepo-Shield-v1.0.1-Setup.exe`
+### 🐧 Linux (Release v1.4.0)
+* **Debian/Ubuntu/Kali package:** `ShadowRepo-Shield-v1.4.0.deb`
+* **AppImage package:** `ShadowRepo-Shield-v1.4.0.AppImage`
+* **Portable package:** `ShadowRepo-Shield-v1.4.0.tar.gz`
+* Refer to [INSTALLATION_GUIDE_LINUX.md](INSTALLATION_GUIDE_LINUX.md) for step-by-step distribution instructions (Ubuntu, Debian, Kali Linux, Linux Mint, Pop!_OS).
 
-**Alternative installer:**
-`ShadowRepo-Shield-v1.0.1.msi`
-
-**Download from:**
-[https://github.com/PNMS2026/shadowrepo-shield/releases/latest](https://github.com/PNMS2026/shadowrepo-shield/releases/latest)
+**Download Releases from:**
+[https://github.com/PNMS2026/shadowrepo-shield/releases](https://github.com/PNMS2026/shadowrepo-shield/releases)
 
 ---
 
 ## Key Features
 
+- **Dual Scan Modes (v1.4.0):**
+  - **Local Scan:** Desktop scans run directly on the user's computer; labeled as "Local Scan — Not independently verified" to prevent misleading trust assumptions.
+  - **Verified Scan:** Security checks executed inside an official CI/CD runner (GitHub Actions), generating a verifiable signature based on the run context.
+- **Standalone CLI Binary (v1.4.0):** A native binary (`shadowrepo-cli`) to execute fast, headless scans in terminals or build tasks, supporting customized exit codes mapped to risk assessments.
+- **Report Hash Integrity (v1.4.0):** Recompute report hashes to verify that findings, risk levels, and scan modes have not been modified after generation.
+- **AI Security Advisory (v1.4.0):** Explains findings and suggests fixes without modifying the deterministic scan score. Includes local regex-based privacy redaction (`redact_secrets()`) to protect private API keys, mnemonic seeds, and credentials.
+- **GitHub Action Workflow:** Runs verified scans inside PR pipeline runs, uploads official reports, and comments metrics on pull requests.
 - **Static Security Walker:** Recursively traverses directories, skipping binary structures and standard dependency folders (e.g., `node_modules`, `.git`, `dist`, `build`).
 - **Web3 Threat Engine:** Detects dangerous lifecycle scripts (e.g., preinstall hooks), shell execution imports (`child_process`), wallet drainer APIs (`setApprovalForAll`, `MaxUint256`), permit abuses, and Solidity security risks (`delegatecall`, `tx.origin`, `selfdestruct`).
 - **Git Hook Malware Detection (v1.0.1):**
-  - Active `.git/hooks` detection (commit-msg, pre-push, post-checkout, post-merge, pre-commit, pre-rebase, post-rewrite)
+  - Active `.git/hooks` detection
   - Hook chaining detection
   - Remote `curl`/`wget` pipe-to-shell execution detection
   - Hidden PowerShell execution detection
   - Self-deleting hook behavior detection
-  - Suspicious remote domain reference detection
-  - Combined heuristic escalation to Critical when multiple indicators co-occur
+  - Heuristic escalation to Critical on indicator overlap
 - **Interactive Risk Dashboard:** Visualization of threats with high-impact category gauges, severity filters, and recommended remediations.
-- **Blockchain Proof Anchoring:** Generates deterministic repository and report hashes using SHA-256 and registers them to a Solidity smart contract for trustless third-party verification.
+- **Blockchain Proof Anchoring (Demo-Only):** Generates deterministic repository hashes using SHA-256 and registers them to a Solidity smart contract mapping.
 - **Report Export:** Generates JSON, HTML, and real PDF security reports for local review and sharing.
 
 ---
@@ -112,8 +121,22 @@ cd src-tauri
 cargo test
 ```
 
-### 5. Build for Production
-To package the app as a standalone executable:
+### 5. Compile and Run the Standalone CLI
+To build and execute the fast command-line scanner:
+```bash
+# Build the CLI target in release mode
+cd src-tauri
+cargo build --release --bin shadowrepo-cli
+
+# Scan a local folder in local mode
+./target/release/shadowrepo-cli.exe ../path/to/repo --name "my-scan" --mode local
+
+# Scan a local folder in verified mode
+./target/release/shadowrepo-cli.exe ../path/to/repo --name "my-scan" --mode verified
+```
+
+### 6. Build Desktop App for Production
+To package the desktop GUI as a standalone installer/executable:
 ```bash
 npm run tauri build
 ```

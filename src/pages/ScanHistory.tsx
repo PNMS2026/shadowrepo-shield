@@ -176,6 +176,7 @@ export default function ScanHistory() {
             <thead>
               <tr>
                 <th>Repository</th>
+                <th>Mode</th>
                 <th>Risk Score</th>
                 <th>Findings</th>
                 <th>Files</th>
@@ -211,6 +212,29 @@ export default function ScanHistory() {
                     >
                       {getDisplayPath(scan.path)}
                     </div>
+                  </td>
+                  <td>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "2px 8px",
+                        borderRadius: "4px",
+                        fontSize: "10px",
+                        fontWeight: 600,
+                        ...(scan.scan_mode === "verified"
+                          ? {
+                              background: "rgba(16, 185, 129, 0.1)",
+                              color: "#10b981",
+                            }
+                          : {
+                              background: "rgba(245, 158, 11, 0.1)",
+                              color: "#f59e0b",
+                            }),
+                      }}
+                    >
+                      {scan.scan_mode === "verified" ? "✅ CI Verified" : "🟡 Local"}
+                    </span>
                   </td>
                   <td>
                     <div

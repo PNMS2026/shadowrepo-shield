@@ -17,6 +17,7 @@ const MOCK_SCANS: ScanSummary[] = [
     total_files: 234,
     total_findings: 18,
     status: "completed",
+    scan_mode: "local",
     blockchain_tx: "0x1a2b3c...def",
   },
   {
@@ -29,6 +30,7 @@ const MOCK_SCANS: ScanSummary[] = [
     total_files: 89,
     total_findings: 6,
     status: "completed",
+    scan_mode: "local",
     blockchain_tx: null,
   },
   {
@@ -41,6 +43,7 @@ const MOCK_SCANS: ScanSummary[] = [
     total_files: 156,
     total_findings: 2,
     status: "completed",
+    scan_mode: "local",
     blockchain_tx: "0x4e5f6a...789",
   },
   {
@@ -53,6 +56,7 @@ const MOCK_SCANS: ScanSummary[] = [
     total_files: 312,
     total_findings: 14,
     status: "completed",
+    scan_mode: "local",
     blockchain_tx: null,
   },
   {
@@ -65,6 +69,7 @@ const MOCK_SCANS: ScanSummary[] = [
     total_files: 445,
     total_findings: 27,
     status: "completed",
+    scan_mode: "local",
     blockchain_tx: "0x7d8e9f...abc",
   },
 ];
@@ -188,6 +193,8 @@ const MOCK_RESULT: ScanResult = {
   repo_hash: "a3f2b7c9d1e4f5a6b8c0d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3",
   report_hash: "e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6",
   status: "completed",
+  scan_mode: "local",
+  scanner_signature: null,
   findings: MOCK_FINDINGS,
   blockchain_tx: null,
   blockchain_network: null,
@@ -276,6 +283,8 @@ export async function getSettings(): Promise<Settings> {
       blockchain_network: "hardhat",
       contract_address: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
       rpc_url: "http://127.0.0.1:8545",
+      ai_enabled: true,
+      ai_model: "mock",
     };
   }
   return await invoke("get_settings");
@@ -312,7 +321,67 @@ export async function getDashboardStats() {
           MOCK_SCANS.length
       ),
       repos_scanned: MOCK_SCANS.length,
+      verified_scans: MOCK_SCANS.filter((s) => s.scan_mode === "verified").length,
     };
   }
   return await invoke("get_dashboard_stats");
 }
+
+export async function explainFinding(
+  model: string,
+  finding: any
+): Promise<string> {
+  if (!isTauri()) {
+    await new Promise((r) => setTimeout(r, 2000));
+    return `### AI Explanation (Mock Mode)\n\nThis is a mock AI response detailing the security risks of **${finding.description}** in **${finding.file_path}**.\n\n#### Risk Details\n* Attackers might exploit this command structure to execute arbitrary system code.\n\n#### Remediation\n* Avoid invoking shell commands directly. Use safer wrapper libraries.\n\n#### False Positive Check\n* Verify if this command is fully hardcoded and has no dynamic user inputs.`;
+  }
+  return await invoke("explain_finding", { model, finding });
+}
+
+export async function generateExecutiveSummary(
+  model: string,
+  req: any
+): Promise<string> {
+  if (!isTauri()) {
+    await new Promise((r) => setTimeout(r, 1500));
+    return "Mock Executive Summary: The scan analyzed 25 files. A critical setApprovalForAll finding was detected, indicating wallet-drainer risk. Other issues include risky package hooks. Immediate review recommended.";
+  }
+  return await invoke("generate_executive_summary", { model, req });
+}
+
+export async function verifyReportHash(scanId: string): Promise<string> {
+  if (!isTauri()) {
+    await new Promise((r) => setTimeout(r, 500));
+    return "Integrity check passed — Report hash valid";
+  }
+  return await invoke("verify_report_hash", { scanId });
+}
+
+export async function requestAiAnalysis(
+  model: string,
+  scanName: string,
+  riskScore: number,
+  riskLevel: string,
+  findings: Array<{ description: string; severity: string; file_path: string }>
+): Promise<import("../types").AiAnalysis> {
+  if (!isTauri()) {
+    await new Promise((r) => setTimeout(r, 2000));
+    return {
+      summary: `Advisory analysis for '${scanName}': The scan detected ${findings.length} findings with a deterministic risk score of ${riskScore}/100 (${riskLevel}).`,
+      recommendations: [
+        "Review all Critical and High severity findings immediately.",
+        "Check for legitimate use cases before removing flagged patterns.",
+        "Run the scan again after applying fixes to verify improvements."
+      ],
+      confidence: "medium"
+    };
+  }
+  return await invoke("request_ai_analysis", {
+    model,
+    scanName,
+    riskScore,
+    riskLevel,
+    findings
+  });
+}
+

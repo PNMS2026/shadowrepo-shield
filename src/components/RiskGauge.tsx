@@ -40,7 +40,6 @@ export default function RiskGauge({ score, size = 180, level }: RiskGaugeProps) 
             stroke: config.color,
             strokeDasharray: circumference,
             strokeDashoffset: offset,
-            filter: `drop-shadow(0 0 8px ${config.color}40)`,
           }}
         />
       </svg>

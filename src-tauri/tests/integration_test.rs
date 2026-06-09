@@ -1,7 +1,7 @@
 use shadowrepo_shield_lib::db;
 use shadowrepo_shield_lib::report;
 use shadowrepo_shield_lib::scanner;
-use shadowrepo_shield_lib::scanner::types::{RiskLevel, ScanStatus};
+use shadowrepo_shield_lib::scanner::types::{RiskLevel, ScanMode};
 use std::fs;
 use std::path::Path;
 use zip::ZipArchive;
@@ -47,7 +47,7 @@ fn test_integration_flow() {
 
     // 3. Execute static scan
     let scan_id = "test-scan-001".to_string();
-    let result = scanner::run_scan(&extract_dir, &scan_id, "mock-malicious")
+    let result = scanner::run_scan(&extract_dir, &scan_id, "mock-malicious", ScanMode::Local, None)
         .expect("Scan failed");
 
     // 4. Assert findings and threat pattern detections

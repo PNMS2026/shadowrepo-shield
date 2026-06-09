@@ -169,6 +169,37 @@ export default function NewScan() {
         </p>
       </div>
 
+      {/* Scan Mode Info */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "12px",
+          padding: "14px 16px",
+          background: "rgba(245, 158, 11, 0.06)",
+          border: "1px solid rgba(245, 158, 11, 0.12)",
+          borderRadius: "8px",
+          marginBottom: "16px",
+          fontSize: "12px",
+          color: "var(--color-text-secondary)",
+          lineHeight: 1.5,
+        }}
+      >
+        <span style={{ fontSize: "18px", flexShrink: 0 }}>🟡</span>
+        <div>
+          <strong style={{ color: "var(--color-text-primary)" }}>
+            Local Scan Mode
+          </strong>
+          <div style={{ marginTop: "4px" }}>
+            All scans from this desktop app are classified as{" "}
+            <strong>Local Scans</strong> — self-reported and not independently
+            verified. For trusted, independently verified scans, use the{" "}
+            <strong>ShadowRepo Shield GitHub Action</strong> in your CI/CD
+            pipeline.
+          </div>
+        </div>
+      </div>
+
       {/* Scan Name */}
       <div className="card" style={{ marginBottom: "16px" }}>
         <label
@@ -327,10 +358,10 @@ export default function NewScan() {
         <div
           style={{
             padding: "12px 16px",
-            background: "rgba(239, 68, 68, 0.1)",
-            border: "1px solid rgba(239, 68, 68, 0.2)",
-            borderRadius: "8px",
-            color: "#ef4444",
+            background: "rgba(248, 81, 73, 0.1)",
+            border: "1px solid rgba(248, 81, 73, 0.2)",
+            borderRadius: "6px",
+            color: "var(--color-danger)",
             fontSize: "13px",
             marginBottom: "16px",
           }}

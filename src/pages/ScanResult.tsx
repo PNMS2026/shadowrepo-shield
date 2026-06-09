@@ -13,13 +13,15 @@ import {
   Clock,
   FolderOpen,
   Loader2,
+  Sparkles,
+  Brain,
 } from "lucide-react";
 import RiskGauge from "../components/RiskGauge";
 import FindingCard from "../components/FindingCard";
 import RiskBadge from "../components/RiskBadge";
-import { getScanResult, exportReport, updateBlockchainTx, revealInExplorer } from "../lib/tauri";
+import { getScanResult, exportReport, updateBlockchainTx, revealInExplorer, getSettings, requestAiAnalysis } from "../lib/tauri";
 import { submitProof, shortenHash } from "../lib/blockchain";
-import type { ScanResult, Severity, Finding } from "../types";
+import type { ScanResult, Severity, Finding, Settings, AiAnalysis } from "../types";
 
 export default function ScanResultPage() {
   const { scanId } = useParams<{ scanId: string }>();
@@ -43,6 +45,7 @@ export default function ScanResultPage() {
   }
 
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterSeverity, setFilterSeverity] = useState<Severity | "all">(
     "all"
@@ -54,19 +57,53 @@ export default function ScanResultPage() {
   const [exportSuccessPath, setExportSuccessPath] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
 
+  const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
   useEffect(() => {
     loadResult();
   }, [scanId]);
 
+  async function handleRunAiAnalysis() {
+    if (!result || !settings || !settings.ai_model) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const summaryInfo = result.findings.map(f => ({
+        description: f.description,
+        severity: f.severity,
+        file_path: f.file_path
+      }));
+      const analysis = await requestAiAnalysis(
+        settings.ai_model,
+        result.name,
+        result.risk_score,
+        result.risk_level,
+        summaryInfo
+      );
+      setAiAnalysis(analysis);
+    } catch (err: any) {
+      console.error("AI Advisory analysis error:", err);
+      setAiError(err.message || String(err));
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   async function loadResult() {
     try {
       if (scanId) {
-        const data = await getScanResult(scanId);
+        const [data, settingsData] = await Promise.all([
+          getScanResult(scanId),
+          getSettings(),
+        ]);
         setResult(data);
+        setSettings(settingsData);
         if (data.blockchain_tx) setProofTx(data.blockchain_tx);
       }
     } catch (err) {
-      console.error("Failed to load scan result:", err);
+      console.error("Failed to load scan result or settings:", err);
     } finally {
       setLoading(false);
     }
@@ -186,6 +223,33 @@ export default function ScanResultPage() {
             title={result.path}
           >
             {getDisplayPath(result.path)}
+          </div>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              marginTop: "6px",
+              padding: "3px 10px",
+              borderRadius: "4px",
+              fontSize: "11px",
+              fontWeight: 600,
+              ...(result.scan_mode === "verified"
+                ? {
+                    background: "rgba(16, 185, 129, 0.1)",
+                    color: "#10b981",
+                    border: "1px solid rgba(16, 185, 129, 0.2)",
+                  }
+                : {
+                    background: "rgba(245, 158, 11, 0.1)",
+                    color: "#f59e0b",
+                    border: "1px solid rgba(245, 158, 11, 0.2)",
+                  }),
+            }}
+          >
+            {result.scan_mode === "verified"
+              ? "✅ CI Verified Foundation"
+              : "⚠️ Local Scan — Not independently verified"}
           </div>
         </div>
         <RiskBadge riskLevel={result.risk_level} />
@@ -343,7 +407,7 @@ export default function ScanResultPage() {
             style={{
               marginTop: "16px",
               paddingTop: "16px",
-              borderTop: "1px solid rgba(99,102,241,0.06)",
+              borderTop: "1px solid var(--color-surface-600)",
             }}
           >
             <div
@@ -415,8 +479,9 @@ export default function ScanResultPage() {
               alignItems: "center",
               gap: "8px",
               padding: "6px 14px",
-              background: "rgba(16, 185, 129, 0.1)",
-              borderRadius: "8px",
+              background: "rgba(46, 160, 67, 0.1)",
+              border: "1px solid rgba(46, 160, 67, 0.2)",
+              borderRadius: "6px",
               fontSize: "12px",
               color: "var(--color-success)",
             }}
@@ -449,9 +514,9 @@ export default function ScanResultPage() {
         <div
           style={{
             padding: "10px 14px",
-            background: "rgba(16, 185, 129, 0.1)",
-            border: "1px solid rgba(16, 185, 129, 0.2)",
-            borderRadius: "8px",
+            background: "rgba(46, 160, 67, 0.1)",
+            border: "1px solid rgba(46, 160, 67, 0.2)",
+            borderRadius: "6px",
             color: "var(--color-success)",
             fontSize: "12px",
             marginBottom: "16px",
@@ -466,10 +531,10 @@ export default function ScanResultPage() {
         <div
           style={{
             padding: "10px 14px",
-            background: "rgba(239, 68, 68, 0.1)",
-            border: "1px solid rgba(239, 68, 68, 0.2)",
-            borderRadius: "8px",
-            color: "#ef4444",
+            background: "rgba(248, 81, 73, 0.1)",
+            border: "1px solid rgba(248, 81, 73, 0.2)",
+            borderRadius: "6px",
+            color: "var(--color-danger)",
             fontSize: "12px",
             marginBottom: "16px",
           }}
@@ -482,15 +547,96 @@ export default function ScanResultPage() {
         <div
           style={{
             padding: "10px 14px",
-            background: "rgba(239, 68, 68, 0.1)",
-            border: "1px solid rgba(239, 68, 68, 0.2)",
-            borderRadius: "8px",
-            color: "#ef4444",
+            background: "rgba(248, 81, 73, 0.1)",
+            border: "1px solid rgba(248, 81, 73, 0.2)",
+            borderRadius: "6px",
+            color: "var(--color-danger)",
             fontSize: "12px",
             marginBottom: "16px",
           }}
         >
           {proofError}
+        </div>
+      )}
+
+      {/* AI Risk Advisory Panel */}
+      {settings?.ai_enabled && (
+        <div className="card" style={{ marginBottom: "16px", border: "1px solid rgba(167, 139, 250, 0.2)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+            <Sparkles size={20} color="#a78bfa" />
+            <h2 style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "var(--color-text-primary)" }}>
+              AI Security Advisory Panel
+            </h2>
+            <div style={{ flex: 1 }} />
+            <span style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>
+              Model: {settings.ai_model}
+            </span>
+          </div>
+
+          {!aiAnalysis && !aiLoading && !aiError && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "10px" }}>
+              <p style={{ fontSize: "13px", color: "var(--color-text-muted)", margin: 0 }}>
+                Get an AI-generated explanation of the security posture, key threat highlights, and actionable remediation steps.
+                This analysis is advisory only and has no effect on the deterministic scan score.
+              </p>
+              <button className="btn btn-secondary btn-sm" onClick={handleRunAiAnalysis} style={{ color: "#a78bfa", borderColor: "rgba(167, 139, 250, 0.4)" }}>
+                ✨ Analyze Posture with AI
+              </button>
+            </div>
+          )}
+
+          {aiLoading && (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 0" }}>
+              <Loader2 size={16} className="animate-spin" color="#a78bfa" />
+              <span style={{ fontSize: "13px", color: "var(--color-text-secondary)" }}>
+                Analyzing findings and compiling risk advisory with {settings.ai_model}...
+              </span>
+            </div>
+          )}
+
+          {aiError && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ fontSize: "13px", color: "var(--color-danger)" }}>
+                ❌ Failed to generate AI analysis: {aiError}
+              </div>
+              <button className="btn btn-secondary btn-sm" onClick={handleRunAiAnalysis} style={{ width: "fit-content" }}>
+                Retry Analysis
+              </button>
+            </div>
+          )}
+
+          {aiAnalysis && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div style={{ fontSize: "13px", color: "var(--color-text-secondary)", lineHeight: "1.6", background: "var(--color-surface-800)", padding: "12px", borderRadius: "6px" }}>
+                <div style={{ fontWeight: 600, color: "var(--color-text-primary)", marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Brain size={14} color="#a78bfa" /> Posture Summary
+                </div>
+                {aiAnalysis.summary}
+              </div>
+
+              {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: "13px", color: "var(--color-text-primary)", marginBottom: "8px" }}>
+                    📋 Key Recommendations:
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: "20px", fontSize: "13px", color: "var(--color-text-secondary)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {aiAnalysis.recommendations.map((rec, idx) => (
+                      <li key={idx}>{rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--color-surface-600)", paddingTop: "12px", fontSize: "11px", color: "var(--color-text-muted)" }}>
+                <div>
+                  Confidence Level: <span style={{ fontWeight: 600, color: aiAnalysis.confidence === "high" ? "var(--color-success)" : aiAnalysis.confidence === "low" ? "var(--color-danger)" : "var(--color-brand-secondary)" }}>{aiAnalysis.confidence.toUpperCase()}</span>
+                </div>
+                <div>
+                  ⚠️ Advisory only — Not authoritative. Focuses on explanations and recommendations.
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -562,7 +708,12 @@ export default function ScanResultPage() {
           </div>
         ) : (
           filteredFindings.map((finding) => (
-            <FindingCard key={finding.id} finding={finding} />
+            <FindingCard
+              key={finding.id}
+              finding={finding}
+              aiEnabled={settings?.ai_enabled}
+              aiModel={settings?.ai_model}
+            />
           ))
         )}
       </div>

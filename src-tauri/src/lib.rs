@@ -6,13 +6,18 @@ pub mod scanner;
 use tauri::Manager;
 use std::path::PathBuf;
 
-/// Resolve the application base directory inside AppData/Local
+/// Resolve the application base directory inside AppData/Local or ~/.local/share
 pub fn get_app_dir(app_handle: &tauri::AppHandle) -> PathBuf {
     let mut app_dir = app_handle
         .path()
         .local_data_dir()
         .unwrap_or_else(|_| std::env::temp_dir());
+    
+    #[cfg(target_os = "linux")]
+    app_dir.push("shadowrepo-shield");
+    #[cfg(not(target_os = "linux"))]
     app_dir.push("ShadowRepoShield");
+    
     app_dir
 }
 
@@ -88,7 +93,11 @@ pub fn run() {
             commands::select_folder,
             commands::select_zip_file,
             commands::reveal_in_explorer,
-            commands::scan_git_url
+            commands::scan_git_url,
+            commands::explain_finding,
+            commands::generate_executive_summary,
+            commands::verify_report_hash,
+            commands::request_ai_analysis
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -5,6 +5,7 @@ import {
   Globe,
   HardDrive,
   Shield,
+  Sparkles,
 } from "lucide-react";
 import { getSettings, updateSettings, selectFolder } from "../lib/tauri";
 import type { Settings as SettingsType } from "../types";
@@ -17,6 +18,8 @@ export default function Settings() {
     blockchain_network: "hardhat",
     contract_address: "",
     rpc_url: "",
+    ai_enabled: false,
+    ai_model: "mock",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -267,6 +270,89 @@ export default function Settings() {
                   }
                   placeholder="0x..."
                 />
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* AI Explanations Settings */}
+      <div className="card" style={{ marginBottom: "16px" }}>
+        <div className="settings-group">
+          <h3>
+            <Sparkles size={16} />
+            AI Security Explanations
+          </h3>
+
+          <div className="setting-row">
+            <div className="setting-info">
+              <div className="setting-label">Enable AI Explanations</div>
+              <div className="setting-description">
+                Allows explaining findings, lifecycle hook scripts, and remediation recommendations using AI.
+              </div>
+            </div>
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={settings.ai_enabled}
+                onChange={(e) =>
+                  updateField("ai_enabled", e.target.checked)
+                }
+              />
+              <span className="toggle-slider" />
+            </label>
+          </div>
+
+          {settings.ai_enabled && (
+            <>
+              <div className="setting-row">
+                <div className="setting-info">
+                  <div className="setting-label">AI Model</div>
+                  <div className="setting-description">
+                    Select which model the application will invoke for analyses
+                  </div>
+                </div>
+                <select
+                  className="select"
+                  value={settings.ai_model}
+                  onChange={(e) => updateField("ai_model", e.target.value)}
+                  style={{
+                    background: "var(--color-surface-700)",
+                    border: "1px solid var(--color-surface-600)",
+                    borderRadius: "6px",
+                    color: "var(--color-text-primary)",
+                    padding: "8px 12px",
+                    width: "280px",
+                    outline: "none"
+                  }}
+                >
+                  <option value="mock">Local Mock Model (Offline Testing)</option>
+                  <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                  <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                  <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                  <option value="gpt-4o-mini">GPT-4o-Mini</option>
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                  <option value="meta/llama3-70b-instruct">Llama 3 70B (NVIDIA NIM)</option>
+                  <option value="mistralai/mixtral-8x22b-instruct">Mixtral 8x22B (NVIDIA NIM)</option>
+                  <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet (OpenRouter)</option>
+                  <option value="meta/llama-3.1-405b-instruct">Llama 3.1 405B (OpenRouter)</option>
+                </select>
+              </div>
+
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "var(--color-warning)",
+                  background: "rgba(210, 153, 34, 0.05)",
+                  border: "1px solid var(--color-warning)",
+                  borderRadius: "6px",
+                  padding: "12px",
+                  marginTop: "12px",
+                  lineHeight: "1.5"
+                }}
+              >
+                ⚠️ <strong>Privacy Notice:</strong> AI explanations may send redacted finding metadata to the configured AI provider. Source code and secrets (such as private keys and seed phrases) are automatically redacted before upload.
               </div>
             </>
           )}
