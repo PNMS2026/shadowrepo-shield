@@ -2,7 +2,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-const AI_KEYS_RAW: &str = include_str!("../../ai_keys.json");
+// AI API keys are loaded dynamically at runtime; the example keys are embedded as a fallback
 
 #[derive(Deserialize, Debug)]
 struct AiKeys {
@@ -69,10 +69,49 @@ pub fn redact_secrets(input: &str) -> String {
     result
 }
 
-/// Helper to get keys parsed
+/// Helper to get keys parsed, checking for files at runtime and falling back to template
 fn get_api_keys() -> Result<AiKeys, String> {
-    serde_json::from_str(AI_KEYS_RAW)
-        .map_err(|e| format!("Failed to parse embedded AI keys config: {}", e))
+    let mut file_content: Option<String> = None;
+    
+    // Check cwd
+    if let Ok(cwd) = std::env::current_dir() {
+        let path_a = cwd.join("src-tauri").join("ai_keys.json");
+        let path_b = cwd.join("ai_keys.json");
+        if path_a.exists() {
+            if let Ok(content) = std::fs::read_to_string(path_a) {
+                file_content = Some(content);
+            }
+        } else if path_b.exists() {
+            if let Ok(content) = std::fs::read_to_string(path_b) {
+                file_content = Some(content);
+            }
+        }
+    }
+    
+    // Check next to current exe
+    if file_content.is_none() {
+        if let Ok(exe_path) = std::env::current_exe() {
+            if let Some(exe_dir) = exe_path.parent() {
+                let path_c = exe_dir.join("ai_keys.json");
+                if path_c.exists() {
+                    if let Ok(content) = std::fs::read_to_string(path_c) {
+                        file_content = Some(content);
+                    }
+                }
+            }
+        }
+    }
+    
+    if let Some(content) = file_content {
+        if let Ok(keys) = serde_json::from_str::<AiKeys>(&content) {
+            return Ok(keys);
+        }
+    }
+    
+    // Fallback to embedded template
+    const AI_KEYS_RAW_FALLBACK: &str = include_str!("../../ai_keys.example.json");
+    serde_json::from_str(AI_KEYS_RAW_FALLBACK)
+        .map_err(|e| format!("Failed to parse fallback AI keys config: {}", e))
 }
 
 /// Run request to OpenAI compatible chat completions
